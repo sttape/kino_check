@@ -17,8 +17,8 @@ const wheelCtx = wheelCanvas ? wheelCanvas.getContext("2d") : null;
 
 const palette = ["#f97316", "#38bdf8", "#8b5cf6", "#10b981", "#f59e0b", "#ec4899", "#06b6d4", "#84cc16"];
 
-function getWheelMovies() {
-    const movies = loadMovies();
+async function getWheelMovies() {
+    const movies = await loadMovies();
     return movies.filter(movie => movie.status === "Не просмотрено");
 }
 
@@ -147,8 +147,8 @@ function drawWheel() {
     wheelCtx.fillText("FILM", center, center + 1);
 }
 
-function syncWheelState() {
-    wheelMovies = getWheelMovies();
+async function syncWheelState() {
+    wheelMovies = await getWheelMovies();
     selectedMovie = null;
     syncDurationInput();
 
@@ -172,7 +172,7 @@ function syncWheelState() {
     drawWheel();
 }
 
-function finishSpin(finalRotation) {
+async function finishSpin(finalRotation) {
     rotationAngle = finalRotation % (Math.PI * 2);
     const segmentAngle = (Math.PI * 2) / wheelMovies.length;
     const pointerAngle = (Math.PI * 1.5 - rotationAngle + Math.PI * 2) % (Math.PI * 2);
@@ -186,11 +186,11 @@ function finishSpin(finalRotation) {
     }
 
     saveLastMovieId(eliminatedMovie.id);
-    const movies = loadMovies();
+    const movies = await loadMovies();
     const movie = movies.find(item => item.id === eliminatedMovie.id);
     if (movie) {
         movie.status = "Просмотрено";
-        saveMovies(movies);
+        await saveMovies(movies);
     }
 
     if (startWatchBtn) {
@@ -202,12 +202,12 @@ function finishSpin(finalRotation) {
     drawWheel();
 }
 
-function spinWheel() {
+async function spinWheel() {
     if (spinning) {
         return;
     }
 
-    wheelMovies = getWheelMovies();
+    wheelMovies = await getWheelMovies();
 
     if (wheelMovies.length === 0) {
         alert("Нет фильмов для рулетки");
@@ -255,7 +255,7 @@ function spinWheel() {
             return;
         }
 
-        finishSpin(targetRotation);
+        void finishSpin(targetRotation);
     }
 
     requestAnimationFrame(animateFrame);
@@ -272,7 +272,9 @@ if (wheelDurationInput) {
 }
 
 if (spinBtn) {
-    spinBtn.addEventListener("click", spinWheel);
+    spinBtn.addEventListener("click", () => {
+        void spinWheel();
+    });
 }
 
 if (startWatchBtn) {
@@ -285,23 +287,29 @@ if (startWatchBtn) {
         window.location.href = "rating.html";
     });
 }
-        window.addEventListener("pageshow", () => {
-            syncWheelState();
-        });
+window.addEventListener("pageshow", () => {
+    void syncWheelState();
+});
 
-        window.addEventListener("focus", () => {
-            syncWheelState();
-        });
+window.addEventListener("focus", () => {
+    void syncWheelState();
+});
 
-        window.addEventListener("storage", event => {
-            if (!event.key || event.key === STORAGE_KEY || event.key === LAST_MOVIE_KEY || event.key === WHEEL_DURATION_KEY) {
-                syncWheelState();
-            }
-        });
+window.addEventListener("storage", event => {
+    if (!event.key || event.key === STORAGE_KEY || event.key === LAST_MOVIE_KEY || event.key === WHEEL_DURATION_KEY) {
+        void syncWheelState();
+    }
+});
 
 if (document.body.dataset.page === "wheel") {
-    syncWheelState();
+    void syncWheelState();
     window.addEventListener("resize", () => {
         drawWheel();
     });
+
+    setInterval(() => {
+        if (!spinning) {
+            void syncWheelState();
+        }
+    }, 20000);
 }

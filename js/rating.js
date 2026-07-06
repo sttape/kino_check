@@ -1,10 +1,10 @@
 let ratingMovie = null;
 
-function renderRatingPage() {
+async function renderRatingPage() {
     const titleEl = document.getElementById("ratingMovieTitle");
     const emptyEl = document.getElementById("ratingMovieEmpty");
     const selectEl = document.getElementById("ratingMovieSelect");
-    const movies = loadMovies();
+    const movies = await loadMovies();
     const lastRatedMovieId = loadLastMovieId();
 
     if (selectEl) {
@@ -15,14 +15,18 @@ function renderRatingPage() {
         if (lastRatedMovieId) {
             selectEl.value = String(lastRatedMovieId);
         }
-        selectEl.addEventListener("change", () => {
-            const selectedId = Number(selectEl.value);
-            ratingMovie = movies.find(movie => movie.id === selectedId) || null;
-            if (ratingMovie) {
-                saveLastMovieId(ratingMovie.id);
-            }
-            renderRatingMovieState();
-        }, { once: true });
+        if (!selectEl.dataset.listenerAttached) {
+            selectEl.addEventListener("change", async () => {
+                const refreshedMovies = await loadMovies();
+                const selectedId = Number(selectEl.value);
+                ratingMovie = refreshedMovies.find(movie => movie.id === selectedId) || null;
+                if (ratingMovie) {
+                    saveLastMovieId(ratingMovie.id);
+                }
+                renderRatingMovieState();
+            });
+            selectEl.dataset.listenerAttached = "true";
+        }
     }
 
     ratingMovie = movies.find(movie => movie.id === lastRatedMovieId) || movies[0] || null;
@@ -54,7 +58,7 @@ function renderRatingMovieState() {
     `;
 }
 
-document.getElementById("saveRatingBtn").addEventListener("click", () => {
+document.getElementById("saveRatingBtn").addEventListener("click", async () => {
     const ratingInput = document.getElementById("ratingInput");
     const rating = Number(ratingInput.value);
 
@@ -68,7 +72,7 @@ document.getElementById("saveRatingBtn").addEventListener("click", () => {
         return;
     }
 
-    const movies = loadMovies();
+    const movies = await loadMovies();
     const movie = movies.find(item => item.id === ratingMovie.id);
 
     if (!movie) {
@@ -80,13 +84,25 @@ document.getElementById("saveRatingBtn").addEventListener("click", () => {
     movie.ratings.push(rating);
     movie.status = "Просмотрено";
 
-    saveMovies(movies);
+    await saveMovies(movies);
     saveLastMovieId(movie.id);
     ratingInput.value = "";
     alert("Оценка сохранена!");
-    renderRatingPage();
+    await renderRatingPage();
 });
 
 if (document.body.dataset.page === "rating") {
     renderRatingPage();
+
+    window.addEventListener("pageshow", () => {
+        void renderRatingPage();
+    });
+
+    window.addEventListener("focus", () => {
+        void renderRatingPage();
+    });
+
+    setInterval(() => {
+        void renderRatingPage();
+    }, 20000);
 }

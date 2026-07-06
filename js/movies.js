@@ -1,12 +1,12 @@
 let moviesSearchQuery = "";
 
-function renderMoviesTable() {
+async function renderMoviesTable() {
     const tbody = document.querySelector("#moviesTable tbody");
     if (!tbody) {
         return;
     }
 
-    const movies = loadMovies().filter(movie => {
+    const movies = (await loadMovies()).filter(movie => {
         if (!moviesSearchQuery) {
             return true;
         }
@@ -60,8 +60,8 @@ function renderMoviesTable() {
     });
 }
 
-function openMovieModal(movieId) {
-    const movies = loadMovies();
+async function openMovieModal(movieId) {
+    const movies = await loadMovies();
     const movie = movies.find(item => item.id === movieId);
 
     if (!movie) {
@@ -103,11 +103,11 @@ function closeMovieModal() {
     modal.setAttribute("aria-hidden", "true");
 }
 
-function saveMovieModal(event) {
+async function saveMovieModal(event) {
     event.preventDefault();
 
     const movieId = Number(document.getElementById("movieEditId").value);
-    const movies = loadMovies();
+    const movies = await loadMovies();
     const movie = movies.find(item => item.id === movieId);
 
     if (!movie) {
@@ -125,13 +125,13 @@ function saveMovieModal(event) {
         .map(value => Number(value.trim()))
         .filter(value => Number.isFinite(value));
 
-    saveMovies(movies);
+    await saveMovies(movies);
     closeMovieModal();
-    renderMoviesTable();
+    await renderMoviesTable();
 }
 
-function deleteMovie(movieId) {
-    const movies = loadMovies();
+async function deleteMovie(movieId) {
+    const movies = await loadMovies();
     const movie = movies.find(item => item.id === movieId);
 
     if (!movie) {
@@ -144,13 +144,13 @@ function deleteMovie(movieId) {
     }
 
     const updatedMovies = movies.filter(item => item.id !== movieId);
-    saveMovies(updatedMovies);
+    await saveMovies(updatedMovies);
 
     if (loadLastMovieId() === movieId) {
         localStorage.removeItem(LAST_MOVIE_KEY);
     }
 
-    renderMoviesTable();
+    await renderMoviesTable();
 }
 
 const movieModal = document.getElementById("movieModal");
@@ -193,4 +193,22 @@ if (document.body.dataset.page === "movies") {
     }
 
     renderMoviesTable();
+
+    window.addEventListener("pageshow", () => {
+        void renderMoviesTable();
+    });
+
+    window.addEventListener("focus", () => {
+        void renderMoviesTable();
+    });
+
+    window.addEventListener("storage", event => {
+        if (!event.key || event.key === STORAGE_KEY) {
+            void renderMoviesTable();
+        }
+    });
+
+    setInterval(() => {
+        void renderMoviesTable();
+    }, 20000);
 }

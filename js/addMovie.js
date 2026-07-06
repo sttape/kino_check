@@ -29,7 +29,7 @@ function parseCsvLine(line) {
     return result;
 }
 
-function importMoviesFromCsv(csvText) {
+async function importMoviesFromCsv(csvText) {
     const lines = csvText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
 
     if (lines.length === 0) {
@@ -44,7 +44,7 @@ function importMoviesFromCsv(csvText) {
         throw new Error("CSV должен содержать колонку title");
     }
 
-    const movies = loadMovies();
+    const movies = await loadMovies();
 
     lines.slice(1).forEach(line => {
         const values = parseCsvLine(line);
@@ -74,15 +74,15 @@ function importMoviesFromCsv(csvText) {
         });
     });
 
-    saveMovies(movies);
+    await saveMovies(movies);
 }
 
 const addMovieForm = document.getElementById("addMovieForm");
 if (addMovieForm) {
-    addMovieForm.addEventListener("submit", e => {
+    addMovieForm.addEventListener("submit", async e => {
         e.preventDefault();
 
-        const movies = loadMovies();
+        const movies = await loadMovies();
         const title = document.getElementById("title").value.trim();
         const genre = document.getElementById("genre").value.trim();
         const comment = document.getElementById("comment").value.trim();
@@ -96,7 +96,7 @@ if (addMovieForm) {
             ratings: []
         });
 
-        saveMovies(movies);
+        await saveMovies(movies);
         alert("Фильм добавлен!");
         e.target.reset();
 
@@ -108,7 +108,7 @@ if (addMovieForm) {
 
         if (document.body.dataset.page === "movies") {
             if (typeof renderMoviesTable === "function") {
-                renderMoviesTable();
+                await renderMoviesTable();
             }
         }
     });
@@ -124,7 +124,7 @@ if (csvInput) {
 
         try {
             const text = await file.text();
-            importMoviesFromCsv(text);
+            await importMoviesFromCsv(text);
             alert("CSV импортирован!");
             csvInput.value = "";
             const addMovieModal = document.getElementById("addMovieModal");
@@ -133,7 +133,7 @@ if (csvInput) {
                 addMovieModal.setAttribute("aria-hidden", "true");
             }
             if (document.body.dataset.page === "movies" && typeof renderMoviesTable === "function") {
-                renderMoviesTable();
+                await renderMoviesTable();
             }
         } catch (error) {
             alert(error.message || "Не удалось импортировать CSV");
