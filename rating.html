@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Киноклуб — Оценка</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="rating">
+    <header class="site-header">
+        <div>
+            <a class="brand" href="index.html">Qeqoqeq кино</a>
+            <p class="brand-note">Фиксация впечатлений</p>
+        </div>
+        <nav class="site-nav" aria-label="Основная навигация">
+            <a class="nav-link" href="index.html">Колесо</a>
+            <a class="nav-link" href="movies.html">Фильмы</a>
+            <a class="nav-link" href="add.html">Добавить</a>
+            <a class="nav-link active" href="rating.html">Оценка</a>
+        </nav>
+    </header>
+
+    <main class="page-shell">
+        <section class="hero-card compact">
+            <p class="eyebrow">Оценивание</p>
+            <h1>Оцените выбранный фильм</h1>
+            <p class="lead">Сначала крутите колесо, потом поставьте оценку и сохраните её в историю фильма.</p>
+        </section>
+
+        <section class="panel form-panel">
+            <div id="ratingMovieEmpty" class="empty-state hidden">
+                Сначала выберите фильм на странице колеса.
+            </div>
+            <form id="ratingForm" class="movie-form">
+                <label>
+                    <span>Выбор фильма</span>
+                    <select id="ratingMovieSelect"></select>
+                </label>
+                <div id="ratingMovieTitle" class="selected-movie"></div>
+                <label>
+                    <span>Оценка</span>
+                    <input type="number" id="ratingInput" min="-1" max="11" placeholder="От -1 до 11">
+                </label>
+                <button id="saveRatingBtn" type="button">Сохранить оценку</button>
+                <a class="secondary-link" href="index.html">Вернуться к колесу</a>
+            </form>
+        </section>
+    </main>
+
+    <script src="js/storage.js"></script>
+    <script src="js/rating.js"></script>
+</body>
+</html>

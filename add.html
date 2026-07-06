@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Киноклуб — Добавить фильм</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="add">
+    <header class="site-header">
+        <div>
+            <a class="brand" href="index.html">Qeqoqeq кино</a>
+            <p class="brand-note">Пополнение каталога</p>
+        </div>
+        <nav class="site-nav" aria-label="Основная навигация">
+            <a class="nav-link" href="index.html">Колесо</a>
+            <a class="nav-link" href="movies.html">Фильмы</a>
+            <a class="nav-link active" href="add.html">Добавить</a>
+            <a class="nav-link" href="rating.html">Оценка</a>
+        </nav>
+    </header>
+
+    <main class="page-shell">
+        <section class="hero-card compact">
+            <p class="eyebrow">Новый фильм</p>
+            <h1>Добавьте фильм в каталог</h1>
+            <p class="lead">Название обязательно, остальное можно заполнить позже. После сохранения вы сразу попадёте в список.</p>
+        </section>
+
+        <section class="panel form-panel">
+            <div class="import-card">
+                <div>
+                    <h2>Импорт CSV</h2>
+                    <p class="muted">Загрузите список фильмов из CSV с колонками: title, genre, comment, status, ratings.</p>
+                </div>
+                <label class="file-input">
+                    <span>Загрузить CSV</span>
+                    <input type="file" id="csvInput" accept=".csv,text/csv">
+                </label>
+            </div>
+            <form id="addMovieForm" class="movie-form">
+                <label>
+                    <span>Название</span>
+                    <input type="text" id="title" required placeholder="Например, Интерстеллар">
+                </label>
+                <label>
+                    <span>Жанр</span>
+                    <input type="text" id="genre" placeholder="Фантастика, драма, комедия...">
+                </label>
+                <label>
+                    <span>Комментарий</span>
+                    <textarea id="comment" placeholder="Почему этот фильм хочется посмотреть?"></textarea>
+                </label>
+                <label>
+                    <span>Статус</span>
+                    <select id="status">
+                        <option>Не просмотрено</option>
+                        <option>Просмотрено</option>
+                        <option>Не вышел</option>
+                        <option>Скоро выйдет</option>
+                    </select>
+                </label>
+                <button type="submit">Добавить фильм</button>
+            </form>
+        </section>
+    </main>
+
+    <script src="js/storage.js"></script>
+    <script src="js/addMovie.js"></script>
+</body>
+</html>
