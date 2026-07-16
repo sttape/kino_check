@@ -2,27 +2,27 @@ let moviesSearchQuery = "";
 
 async function renderMoviesTable() {
     const tbody = document.querySelector("#moviesTable tbody");
-    if (!tbody) {
-        return;
-    }
+    if (!tbody) return;
 
     const movies = (await loadMovies()).filter(movie => {
-        if (!moviesSearchQuery) {
-            return true;
-        }
+        if (!moviesSearchQuery) return true;
 
-        const haystack = [movie.title, movie.genre, movie.comment, movie.status]
-            .map(value => String(value || "").toLowerCase())
-            .join(" ");
+        const haystack = [
+            movie.title,
+            movie.genre,
+            movie.comment,
+            movie.status
+        ].map(v => String(v || "").toLowerCase()).join(" ");
 
         return haystack.includes(moviesSearchQuery);
     });
+
     tbody.innerHTML = "";
 
     if (movies.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6">Список пока пуст. Добавьте первый фильм на странице добавления.</td>
+                <td colspan="6">Список пока пуст. Добавьте первый фильм.</td>
             </tr>
         `;
         return;
@@ -77,10 +77,6 @@ async function openMovieModal(movieId) {
     const status = document.getElementById("movieEditStatus");
     const ratings = document.getElementById("movieEditRatings");
 
-    if (!modal || !editId || !title || !genre || !comment || !status || !ratings) {
-        return;
-    }
-
     editId.value = String(movie.id);
     title.value = movie.title || "";
     genre.value = movie.genre || "";
@@ -95,10 +91,6 @@ async function openMovieModal(movieId) {
 
 function closeMovieModal() {
     const modal = document.getElementById("movieModal");
-    if (!modal) {
-        return;
-    }
-
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
 }
@@ -116,6 +108,7 @@ async function saveMovieModal(event) {
     }
 
     const ratingText = document.getElementById("movieEditRatings").value;
+
     movie.title = document.getElementById("movieEditTitle").value.trim();
     movie.genre = document.getElementById("movieEditGenre").value.trim();
     movie.comment = document.getElementById("movieEditComment").value.trim();
@@ -123,7 +116,7 @@ async function saveMovieModal(event) {
     movie.ratings = ratingText
         .split(/[;,]/)
         .map(value => Number(value.trim()))
-        .filter(value => Number.isFinite(value));
+        .filter(Number.isFinite);
 
     await saveMovies(movies);
     closeMovieModal();
@@ -139,9 +132,7 @@ async function deleteMovie(movieId) {
         return;
     }
 
-    if (!confirm(`Удалить фильм «${movie.title}»?`)) {
-        return;
-    }
+    if (!confirm(`Удалить фильм «${movie.title}»?`)) return;
 
     const updatedMovies = movies.filter(item => item.id !== movieId);
     await saveMovies(updatedMovies);
@@ -194,13 +185,8 @@ if (document.body.dataset.page === "movies") {
 
     renderMoviesTable();
 
-    window.addEventListener("pageshow", () => {
-        void renderMoviesTable();
-    });
-
-    window.addEventListener("focus", () => {
-        void renderMoviesTable();
-    });
+    window.addEventListener("pageshow", () => void renderMoviesTable());
+    window.addEventListener("focus", () => void renderMoviesTable());
 
     window.addEventListener("storage", event => {
         if (!event.key || event.key === STORAGE_KEY) {
@@ -208,7 +194,8 @@ if (document.body.dataset.page === "movies") {
         }
     });
 
+    // автообновление каждые 10 секунд
     setInterval(() => {
         void renderMoviesTable();
-    }, 20000);
+    }, 10000);
 }

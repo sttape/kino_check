@@ -1,6 +1,6 @@
 let wheelMovies = [];
 let selectedMovie = null;
-let rotationAngle = 0;
+let rotationOffset = 0;
 let spinning = false;
 let spinDurationSeconds = 5;
 
@@ -13,9 +13,30 @@ const wheelList = document.getElementById("wheelMovieList");
 const wheelCount = document.getElementById("wheelCount");
 const wheelDurationInput = document.getElementById("wheelDurationInput");
 const wheelDurationValue = document.getElementById("wheelDurationValue");
+const modeEliminationBtn = document.getElementById("modeElimination");
+const modeNormalBtn = document.getElementById("modeNormal");
+
 const wheelCtx = wheelCanvas ? wheelCanvas.getContext("2d") : null;
 
-const palette = ["#f97316", "#38bdf8", "#8b5cf6", "#10b981", "#f59e0b", "#ec4899", "#06b6d4", "#84cc16"];
+const palette = ["#0ea5a4", "#38bdf8", "#8b5cf6", "#10b981", "#f59e0b", "#ec4899", "#06b6d4", "#84cc16"];
+const SEGMENT_HEIGHT = 80;
+const VISIBLE_SEGMENTS = 3;
+
+function escapeHtml(s) {
+    if (!s) return "";
+    return String(s).replace(/[&<>"']/g, c => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+    }[c]));
+}
+
+function truncateText(text, maxChars = 28) {
+    if (!text) return "";
+    return text.length > maxChars ? text.slice(0, maxChars - 1) + "…" : text;
+}
 
 async function getWheelMovies() {
     const movies = await loadMovies();
@@ -23,14 +44,12 @@ async function getWheelMovies() {
 }
 
 function renderWheelMovieList() {
-    if (!wheelList || !wheelCount) {
-        return;
-    }
+    if (!wheelList || !wheelCount) return;
 
     wheelCount.textContent = `${wheelMovies.length} фильмов`;
 
     if (wheelMovies.length === 0) {
-        wheelList.innerHTML = `<div class="empty-state visible">Список фильмов для колеса пуст.</div>`;
+        wheelList.innerHTML = `<div class="empty-state visible">Список фильмов для барабана пуст.</div>`;
         return;
     }
 
@@ -38,8 +57,8 @@ function renderWheelMovieList() {
         <div class="wheel-movie-item">
             <span class="wheel-index">${index + 1}</span>
             <div>
-                <strong>${movie.title}</strong>
-                <div class="muted">${movie.genre || "Без жанра"}</div>
+                <strong>${escapeHtml(truncateText(movie.title, 36))}</strong>
+                <div class="muted">${escapeHtml(movie.genre || "Без жанра")}</div>
             </div>
         </div>
     `).join("");
@@ -47,269 +66,220 @@ function renderWheelMovieList() {
 
 function syncDurationInput() {
     spinDurationSeconds = loadWheelDuration();
-
-    if (wheelDurationInput) {
-        wheelDurationInput.value = String(spinDurationSeconds);
-    }
-
-    if (wheelDurationValue) {
-        wheelDurationValue.textContent = `${spinDurationSeconds} сек`;
-    }
+    wheelDurationInput.value = String(spinDurationSeconds);
+    wheelDurationValue.textContent = `${spinDurationSeconds} сек`;
 }
 
 function resizeWheelCanvas() {
-    if (!wheelCanvas || !wheelCtx) {
-        return;
-    }
-
     const stage = wheelCanvas.parentElement;
-    if (!stage) {
-        return;
-    }
+    const style = getComputedStyle(stage);
+    const paddingLeft = parseFloat(style.paddingLeft || 0);
+    const paddingRight = parseFloat(style.paddingRight || 0);
+    const width = Math.floor(stage.clientWidth - paddingLeft - paddingRight);
+    const height = SEGMENT_HEIGHT * VISIBLE_SEGMENTS;
 
-    const size = Math.floor(Math.min(stage.clientWidth, stage.clientHeight || stage.clientWidth));
-    const nextSize = Math.max(520, size);
-
-    if (wheelCanvas.width !== nextSize || wheelCanvas.height !== nextSize) {
-        wheelCanvas.width = nextSize;
-        wheelCanvas.height = nextSize;
-    }
+    wheelCanvas.width = width;
+    wheelCanvas.height = height;
 }
 
-function drawWheel() {
-    if (!wheelCtx || !wheelCanvas) {
-        return;
-    }
-
+function drawDrum() {
     resizeWheelCanvas();
 
-    const size = wheelCanvas.width;
-    const center = size / 2;
-    const radius = center - 18;
-    wheelCtx.clearRect(0, 0, size, size);
+    const width = wheelCanvas.width;
+    const height = wheelCanvas.height;
+    const totalHeight = Math.max(1, wheelMovies.length) * SEGMENT_HEIGHT;
+
+    wheelCtx.clearRect(0, 0, width, height);
+
+    wheelCtx.fillStyle = "#020617";
+    wheelCtx.fillRect(0, 0, width, height);
 
     if (wheelMovies.length === 0) {
-        wheelCtx.beginPath();
-        wheelCtx.arc(center, center, radius, 0, Math.PI * 2);
-        wheelCtx.fillStyle = "#111827";
-        wheelCtx.fill();
-        wheelCtx.lineWidth = 6;
-        wheelCtx.strokeStyle = "rgba(255,255,255,0.08)";
-        wheelCtx.stroke();
+        wheelCtx.fillStyle = "#1e293b";
+        wheelCtx.fillRect(0, height / 2 - SEGMENT_HEIGHT / 2, width, SEGMENT_HEIGHT);
         wheelCtx.fillStyle = "#cbd5e1";
-        wheelCtx.font = "600 28px Inter, sans-serif";
+        wheelCtx.font = "700 18px Inter, sans-serif";
         wheelCtx.textAlign = "center";
-        wheelCtx.fillText("Добавьте фильмы", center, center - 8);
-        wheelCtx.fillText("для вращения", center, center + 28);
+        wheelCtx.textBaseline = "middle";
+        wheelCtx.fillText("Добавьте фильмы", width / 2, height / 2);
         return;
     }
 
-    const segmentAngle = (Math.PI * 2) / wheelMovies.length;
+    const centerY = height / 2;
+    const offset = ((rotationOffset % totalHeight) + totalHeight) % totalHeight;
 
-    wheelMovies.forEach((movie, index) => {
-        const startAngle = rotationAngle + index * segmentAngle - Math.PI / 2;
-        const endAngle = startAngle + segmentAngle;
+    for (let i = 0; i < wheelMovies.length; i++) {
+        const movie = wheelMovies[i];
+        const baseY = centerY - SEGMENT_HEIGHT / 2 + i * SEGMENT_HEIGHT;
+        let y = baseY - offset;
 
-        wheelCtx.beginPath();
-        wheelCtx.moveTo(center, center);
-        wheelCtx.arc(center, center, radius, startAngle, endAngle);
-        wheelCtx.closePath();
-        wheelCtx.fillStyle = palette[index % palette.length];
-        wheelCtx.fill();
+        while (y < -SEGMENT_HEIGHT) y += totalHeight;
+        while (y > height) y -= totalHeight;
 
-        wheelCtx.strokeStyle = "rgba(255,255,255,0.92)";
-        wheelCtx.lineWidth = 4;
-        wheelCtx.stroke();
+        wheelCtx.fillStyle = palette[i % palette.length];
+        wheelCtx.fillRect(0, y, width, SEGMENT_HEIGHT - 4);
 
-        wheelCtx.save();
-        wheelCtx.translate(center, center);
-        wheelCtx.rotate(startAngle + segmentAngle / 2);
-        wheelCtx.fillStyle = "#ffffff";
-        wheelCtx.font = "700 26px Inter, sans-serif";
-        wheelCtx.textAlign = "right";
+        wheelCtx.fillStyle = "#071026";
+        wheelCtx.font = "700 18px Inter, sans-serif";
+        wheelCtx.textAlign = "center";
         wheelCtx.textBaseline = "middle";
-        const label = movie.title.length > 18 ? movie.title.slice(0, 18) + "…" : movie.title;
-        wheelCtx.fillText(label, radius - 28, 0);
-        wheelCtx.restore();
+        wheelCtx.fillText(truncateText(movie.title, 36), width / 2, y + SEGMENT_HEIGHT / 2);
+    }
+
+    wheelCtx.strokeStyle = "rgba(248,250,252,0.6)";
+    wheelCtx.lineWidth = 3;
+    wheelCtx.strokeRect(0, centerY - SEGMENT_HEIGHT / 2, width, SEGMENT_HEIGHT);
+
+    wheelCtx.fillStyle = "#f97316";
+    wheelCtx.beginPath();
+    const arrowX = 10;
+    const arrowY = centerY;
+    wheelCtx.moveTo(arrowX + 20, arrowY);
+    wheelCtx.lineTo(arrowX, arrowY - 15);
+    wheelCtx.lineTo(arrowX, arrowY + 15);
+    wheelCtx.closePath();
+    wheelCtx.fill();
+}
+
+function computeSelectedIndexFromOffset(finalOffset) {
+    const totalHeight = Math.max(1, wheelMovies.length) * SEGMENT_HEIGHT;
+    const normalized = ((finalOffset % totalHeight) + totalHeight) % totalHeight;
+    const centerIndex = Math.floor((normalized + SEGMENT_HEIGHT / 2) / SEGMENT_HEIGHT) % wheelMovies.length;
+    return (centerIndex + wheelMovies.length) % wheelMovies.length;
+}
+
+async function finishDrumSpin(finalOffset) {
+    const selectedIndex = computeSelectedIndexFromOffset(finalOffset);
+    const selected = wheelMovies[selectedIndex];
+    const eliminationMode = modeEliminationBtn?.classList.contains("active");
+
+    if (eliminationMode) {
+        const eliminated = wheelMovies.splice(selectedIndex, 1)[0];
+        rotationOffset = rotationOffset % (wheelMovies.length * SEGMENT_HEIGHT);
+
+        if (wheelMovies.length === 0) {
+            wheelResult.innerHTML = `<strong>Все фильмы выбыли.</strong>`;
+            drawDrum();
+            return;
+        }
+
+        wheelResult.innerHTML =
+            `<strong>Выбывает:</strong> ${escapeHtml(eliminated.title)}<br>
+             <span class="muted">${escapeHtml(eliminated.genre || "Без жанра")}</span>`;
+
+        if (wheelMovies.length === 1) {
+            wheelResult.innerHTML =
+                `<strong>Последний фильм:</strong> ${escapeHtml(wheelMovies[0].title)}`;
+            startWatchBtn.classList.remove("hidden");
+        }
+    } else {
+        wheelResult.innerHTML =
+            `<strong>Выбран фильм:</strong> ${escapeHtml(selected.title)}<br>
+             <span class="muted">${escapeHtml(selected.genre || "Без жанра")}</span>`;
+        saveLastMovieId(selected.id);
+        startWatchBtn.classList.remove("hidden");
+    }
+
+    renderWheelMovieList();
+    drawDrum();
+}
+
+function spinDrum() {
+    if (spinning) return;
+    if (wheelMovies.length === 0) {
+        alert("Нет фильмов для барабана");
+        return;
+    }
+
+    spinning = true;
+    startWatchBtn.classList.add("hidden");
+
+    const totalHeight = wheelMovies.length * SEGMENT_HEIGHT;
+    const extraTurns = 3 + Math.random() * 2;
+    const randomOffset = Math.floor(Math.random() * totalHeight);
+    const targetOffset = rotationOffset + totalHeight * extraTurns + randomOffset;
+    const startOffset = rotationOffset;
+    const duration = Math.max(600, spinDurationSeconds * 1000);
+    const startTime = performance.now();
+
+    function animateFrame(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        rotationOffset = startOffset + (targetOffset - startOffset) * eased;
+        drawDrum();
+
+        if (progress < 1) {
+            requestAnimationFrame(animateFrame);
+        } else {
+            spinning = false;
+            finishDrumSpin(rotationOffset);
+        }
+    }
+
+    requestAnimationFrame(animateFrame);
+}
+
+function setModeButtons() {
+    modeEliminationBtn.addEventListener("click", () => {
+        modeEliminationBtn.classList.add("active");
+        modeNormalBtn.classList.remove("active");
     });
 
-    wheelCtx.beginPath();
-    wheelCtx.arc(center, center, 72, 0, Math.PI * 2);
-    wheelCtx.fillStyle = "#0f172a";
-    wheelCtx.fill();
-    wheelCtx.lineWidth = 8;
-    wheelCtx.strokeStyle = "rgba(255,255,255,0.12)";
-    wheelCtx.stroke();
-
-    wheelCtx.fillStyle = "#f8fafc";
-    wheelCtx.font = "800 24px Inter, sans-serif";
-    wheelCtx.textAlign = "center";
-    wheelCtx.fillText("FILM", center, center + 1);
+    modeNormalBtn.addEventListener("click", () => {
+        modeNormalBtn.classList.add("active");
+        modeEliminationBtn.classList.remove("active");
+    });
 }
 
 async function syncWheelState() {
     wheelMovies = await getWheelMovies();
     selectedMovie = null;
     syncDurationInput();
+    startWatchBtn.classList.add("hidden");
 
-    if (wheelResult) {
-        wheelResult.textContent = wheelMovies.length
-            ? `В колесе ${wheelMovies.length} фильмов. После каждого прокрута фильм выбывает.`
-            : "Список для колеса пока пуст.";
-    }
-
-    if (wheelHint) {
-        wheelHint.textContent = wheelMovies.length
-            ? "Крутите колесо. Выбранный фильм будет выбывать из списка колеса."
-            : "Сначала добавьте несколько фильмов со статусом «Не просмотрено».";
-    }
-
-    if (startWatchBtn) {
-        startWatchBtn.classList.add("hidden");
-    }
+    wheelResult.textContent = wheelMovies.length
+        ? `В барабане ${wheelMovies.length} фильмов`
+        : "Список для барабана пуст.";
 
     renderWheelMovieList();
-    drawWheel();
+    drawDrum();
 }
 
-async function finishSpin(finalRotation) {
-    rotationAngle = finalRotation % (Math.PI * 2);
-    const segmentAngle = (Math.PI * 2) / wheelMovies.length;
-    const pointerAngle = (Math.PI * 1.5 - rotationAngle + Math.PI * 2) % (Math.PI * 2);
-    const selectedIndex = Math.floor(pointerAngle / segmentAngle) % wheelMovies.length;
-    selectedMovie = wheelMovies[selectedIndex];
-    const eliminatedMovie = wheelMovies.splice(selectedIndex, 1)[0];
-    spinning = false;
-
-    if (wheelResult) {
-        wheelResult.innerHTML = `<strong>Выбывает:</strong> ${eliminatedMovie.title}<br><span class="muted">${eliminatedMovie.genre || "Без жанра"}</span>`;
-    }
-
-    saveLastMovieId(eliminatedMovie.id);
-    const movies = await loadMovies();
-    const movie = movies.find(item => item.id === eliminatedMovie.id);
-    if (movie) {
-        movie.status = "Просмотрено";
-        await saveMovies(movies);
-    }
-
-    if (startWatchBtn) {
-        startWatchBtn.classList.remove("hidden");
-    }
-
-    wheelMovies = getWheelMovies();
-    renderWheelMovieList();
-    drawWheel();
-}
-
-async function spinWheel() {
-    if (spinning) {
-        return;
-    }
-
-    wheelMovies = await getWheelMovies();
-
-    if (wheelMovies.length === 0) {
-        alert("Нет фильмов для рулетки");
-        return;
-    }
-
-    if (wheelMovies.length === 1) {
-        selectedMovie = wheelMovies[0];
-        saveLastMovieId(selectedMovie.id);
-        if (wheelResult) {
-            wheelResult.innerHTML = `<strong>Последний фильм:</strong> ${selectedMovie.title}`;
-        }
-        if (startWatchBtn) {
-            startWatchBtn.classList.remove("hidden");
-        }
-        drawWheel();
-        return;
-    }
-
-    spinning = true;
-    if (startWatchBtn) {
-        startWatchBtn.classList.add("hidden");
-    }
-
-    const extraTurns = 4 + Math.random() * 3;
-    const segmentAngle = (Math.PI * 2) / wheelMovies.length;
-    const chosenIndex = Math.floor(Math.random() * wheelMovies.length);
-    const pointerTarget = Math.PI * 1.5 - (chosenIndex * segmentAngle + segmentAngle / 2);
-    const targetRotation = extraTurns * Math.PI * 2 + pointerTarget;
-    const startRotation = rotationAngle;
-    const animationDuration = Math.max(1800, spinDurationSeconds * 1000);
-    const startTime = performance.now();
-
-    function animateFrame(now) {
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / animationDuration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        const currentRotation = startRotation + (targetRotation - startRotation) * eased;
-
-        rotationAngle = currentRotation;
-        drawWheel();
-
-        if (progress < 1) {
-            requestAnimationFrame(animateFrame);
-            return;
-        }
-
-        void finishSpin(targetRotation);
-    }
-
-    requestAnimationFrame(animateFrame);
-}
-
-if (wheelDurationInput) {
-    wheelDurationInput.addEventListener("input", () => {
-        spinDurationSeconds = Number(wheelDurationInput.value);
-        saveWheelDuration(spinDurationSeconds);
-        if (wheelDurationValue) {
-            wheelDurationValue.textContent = `${spinDurationSeconds} сек`;
-        }
-    });
-}
-
-if (spinBtn) {
-    spinBtn.addEventListener("click", () => {
-        void spinWheel();
-    });
-}
-
-if (startWatchBtn) {
-    startWatchBtn.addEventListener("click", () => {
-        if (!selectedMovie) {
-            alert("Сначала выберите фильм в рулетке");
-            return;
-        }
-
-        window.location.href = "rating.html";
-    });
-}
-window.addEventListener("pageshow", () => {
-    void syncWheelState();
+wheelDurationInput.addEventListener("input", () => {
+    spinDurationSeconds = Number(wheelDurationInput.value);
+    saveWheelDuration(spinDurationSeconds);
+    wheelDurationValue.textContent = `${spinDurationSeconds} сек`;
 });
 
-window.addEventListener("focus", () => {
-    void syncWheelState();
+spinBtn.addEventListener("click", spinDrum);
+
+startWatchBtn.addEventListener("click", () => {
+    const last = loadLastMovieId();
+    if (!last) {
+        alert("Сначала выберите фильм");
+        return;
+    }
+    window.location.href = "rating.html";
 });
+
+window.addEventListener("pageshow", syncWheelState);
+window.addEventListener("focus", syncWheelState);
 
 window.addEventListener("storage", event => {
-    if (!event.key || event.key === STORAGE_KEY || event.key === LAST_MOVIE_KEY || event.key === WHEEL_DURATION_KEY) {
-        void syncWheelState();
+    if (!event.key || event.key === STORAGE_KEY) {
+        syncWheelState();
     }
 });
 
 if (document.body.dataset.page === "wheel") {
-    void syncWheelState();
-    window.addEventListener("resize", () => {
-        drawWheel();
-    });
+    setModeButtons();
+    syncWheelState();
 
+    window.addEventListener("resize", drawDrum);
+
+    // автообновление каждые 10 секунд
     setInterval(() => {
-        if (!spinning) {
-            void syncWheelState();
-        }
-    }, 20000);
+        if (!spinning) syncWheelState();
+    }, 10000);
 }

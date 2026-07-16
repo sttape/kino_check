@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кино — Колесо</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body data-page="wheel">
     <header class="site-header">
         <div>
@@ -23,35 +25,52 @@
     <main class="page-shell">
         <section class="hero-card">
             <p class="eyebrow">Колесо фильмов</p>
-            <h1>Колесо для выбора следующего просмотра</h1>
-            <p class="lead">Колесо автоматически собирает фильмы из списка, крутится с анимацией и выбирает победителя на глазах у всех.</p>
+            <h1>Колесо для выбора фильма</h1>
+            <p class="lead">Колесо автоматически собирает фильмы из списка, крутится с анимацией и выбирает победителя
+                на глазах у всех.</p>
         </section>
 
         <section class="panel wheel-panel">
-            <aside class="wheel-list-panel">
-                <div class="section-title compact-title">
-                    <h2>Участвуют в колесе</h2>
-                    <p class="muted" id="wheelCount">0 фильмов</p>
+            <div class="wheel-panel-inner">
+                <aside class="wheel-list-panel">
+                    <div class="section-title compact-title">
+                        <h2>Участвуют в колесе</h2>
+                        <p class="muted" id="wheelCount">0 фильмов</p>
+                    </div>
+                    <div id="wheelMovieList" class="wheel-movie-list"></div>
+                </aside>
+
+                <div class="wheel-stage">
+                    <h3>Барабан фильмов:</h3>
+                    <canvas id="wheelCanvas" width="900" height="900"></canvas>
                 </div>
-                <div id="wheelMovieList" class="wheel-movie-list"></div>
-            </aside>
 
-            <div class="wheel-stage">
-                <div class="wheel-pointer" aria-hidden="true"></div>
-                <canvas id="wheelCanvas" width="900" height="900"></canvas>
-            </div>
+                <div class="wheel-sidebar">
+                    <h2>Готовы выбрать фильм?</h2>
+                    <p id="wheelHint" class="muted">Добавьте несколько фильмов, затем нажмите кнопку вращения.</p>
 
-            <div class="wheel-sidebar">
-                <h2>Готовы выбрать фильм?</h2>
-                <p id="wheelHint" class="muted">Добавьте несколько фильмов, затем нажмите кнопку вращения.</p>
-                <label class="wheel-setting">
-                    <span>Длительность прокрутки, сек</span>
-                    <input id="wheelDurationInput" type="range" min="2" max="12" step="1">
-                    <strong id="wheelDurationValue"></strong>
-                </label>
-                <button id="spinBtn" type="button">Крутить колесо</button>
-                <div id="wheelResult" class="result-card"></div>
-                <a id="startWatchBtn" class="primary-link hidden" href="rating.html">Начать просмотр</a>
+                    <label class="wheel-setting">
+                        <span>Длительность прокрутки, сек</span>
+                        <input id="wheelDurationInput" type="range" min="2" max="12" step="1">
+                        <strong id="wheelDurationValue"></strong>
+                    </label>
+
+                    <!-- ВСТАВИТЬ СЮДА -->
+                    <div class="wheel-mode-switch">
+                        <label>Режим выбора:</label>
+                        <div class="mode-buttons">
+                            <button id="modeNormal" type="button" class="mode-btn active">Обычное</button>
+                            <button id="modeElimination" type="button" class="mode-btn">На выбывание</button>
+                        </div>
+                    </div>
+                    <!-- КОНЕЦ ВСТАВКИ -->
+
+                    <button id="spinBtn" type="button">Крутить колесо</button>
+                    <div id="wheelResult" class="result-card"></div>
+                    <a id="startWatchBtn" class="primary-link hidden" href="rating.html">Начать просмотр</a>
+                </div>
+
+
             </div>
         </section>
     </main>
@@ -60,4 +79,5 @@
     <script src="js/storage.js"></script>
     <script src="js/wheel.js"></script>
 </body>
+
 </html>

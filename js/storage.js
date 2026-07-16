@@ -1,3 +1,4 @@
+// storage.js — единое хранилище фильмов (локальное + Supabase)
 const STORAGE_KEY = "movies_db";
 const LAST_MOVIE_KEY = "lastMovieId";
 const WHEEL_DURATION_KEY = "wheelDurationSeconds";
@@ -7,10 +8,12 @@ const supabaseUrl = String(appConfig.supabaseUrl || "").replace(/\/$/, "");
 const supabaseAnonKey = String(appConfig.supabaseAnonKey || "");
 const supabaseTable = String(appConfig.supabaseTable || "movies");
 
+// Проверяем, подключен ли Supabase
 function hasRemoteStorage() {
     return Boolean(supabaseUrl && supabaseAnonKey);
 }
 
+// Заголовки для запросов
 function remoteHeaders(extraHeaders = {}) {
     return {
         apikey: supabaseAnonKey,
@@ -19,32 +22,32 @@ function remoteHeaders(extraHeaders = {}) {
     };
 }
 
+// Приведение оценок к числовому массиву
 function normalizeRatings(ratings) {
     if (Array.isArray(ratings)) {
-        return ratings.map(value => Number(value)).filter(value => Number.isFinite(value));
+        return ratings.map(Number).filter(Number.isFinite);
     }
 
     if (typeof ratings === "string" && ratings.trim()) {
         try {
             const parsed = JSON.parse(ratings);
-
             if (Array.isArray(parsed)) {
-                return parsed.map(value => Number(value)).filter(value => Number.isFinite(value));
+                return parsed.map(Number).filter(Number.isFinite);
             }
         } catch {
             return ratings
                 .split(/[|;,]/)
                 .map(value => Number(value.trim()))
-                .filter(value => Number.isFinite(value));
+                .filter(Number.isFinite);
         }
     }
 
     return [];
 }
 
+// Приведение фильма к единому формату
 function normalizeMovie(movie) {
     const parsedId = Number(movie.id);
-
     return {
         id: Number.isFinite(parsedId) ? parsedId : Date.now() + Math.random(),
         title: String(movie.title || "").trim(),
@@ -55,6 +58,7 @@ function normalizeMovie(movie) {
     };
 }
 
+// Локальные операции
 function loadMoviesFromLocal() {
     try {
         const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -68,8 +72,9 @@ function saveMoviesToLocal(movies) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(movies.map(normalizeMovie)));
 }
 
+// Загрузка из Supabase
 async function loadMoviesFromRemote() {
-    const response = await fetch(`${supabaseUrl}/rest/v1/${encodeURIComponent(supabaseTable)}?select=*&order=id.asc`, {
+    const response = await fetch(`${supabaseUrl}/rest/v1/${encodeURIComponent(supabaseTable)}?select=*`, {
         headers: remoteHeaders()
     });
 
@@ -81,48 +86,52 @@ async function loadMoviesFromRemote() {
     return Array.isArray(movies) ? movies.map(normalizeMovie) : [];
 }
 
+// Полная замена данных в Supabase
 async function replaceRemoteMovies(movies) {
     const normalizedMovies = movies.map(normalizeMovie);
+
+    // Удаляем все старые записи
     const deleteResponse = await fetch(`${supabaseUrl}/rest/v1/${encodeURIComponent(supabaseTable)}?id=gte.0`, {
         method: "DELETE",
-        headers: remoteHeaders({
-            Prefer: "return=minimal"
-        })
+        headers: remoteHeaders({ Prefer: "return=minimal" })
     });
 
     if (!deleteResponse.ok) {
         throw new Error(await deleteResponse.text());
     }
 
-    if (normalizedMovies.length === 0) {
-        return;
-    }
+    // Добавляем новые
+    if (normalizedMovies.length > 0) {
+        const insertResponse = await fetch(`${supabaseUrl}/rest/v1/${encodeURIComponent(supabaseTable)}`, {
+            method: "POST",
+            headers: remoteHeaders({
+                "Content-Type": "application/json",
+                Prefer: "return=minimal"
+            }),
+            body: JSON.stringify(normalizedMovies)
+        });
 
-    const insertResponse = await fetch(`${supabaseUrl}/rest/v1/${encodeURIComponent(supabaseTable)}`, {
-        method: "POST",
-        headers: remoteHeaders({
-            "Content-Type": "application/json",
-            Prefer: "return=minimal"
-        }),
-        body: JSON.stringify(normalizedMovies)
-    });
-
-    if (!insertResponse.ok) {
-        throw new Error(await insertResponse.text());
+        if (!insertResponse.ok) {
+            throw new Error(await insertResponse.text());
+        }
     }
 }
 
+// Основная функция загрузки
 function loadMovies() {
     if (!hasRemoteStorage()) {
         return loadMoviesFromLocal();
     }
 
-    return loadMoviesFromRemote().catch(error => {
-        console.warn("Не удалось загрузить фильмы из Supabase", error);
-        return loadMoviesFromLocal();
-    });
+    // Показываем локальные данные сразу, потом обновляем из Supabase
+    const local = loadMoviesFromLocal();
+    loadMoviesFromRemote()
+        .then(remote => saveMoviesToLocal(remote))
+        .catch(error => console.warn("Ошибка Supabase:", error));
+    return local;
 }
 
+// Сохранение фильмов
 async function saveMovies(movies) {
     const normalizedMovies = movies.map(normalizeMovie);
     saveMoviesToLocal(normalizedMovies);
@@ -134,12 +143,13 @@ async function saveMovies(movies) {
     try {
         await replaceRemoteMovies(normalizedMovies);
     } catch (error) {
-        console.warn("Не удалось сохранить фильмы в Supabase", error);
+        console.warn("Не удалось сохранить фильмы в Supabase:", error);
     }
 
     return normalizedMovies;
 }
 
+// Сохранение и загрузка последнего фильма
 function saveLastMovieId(movieId) {
     localStorage.setItem(LAST_MOVIE_KEY, String(movieId));
 }
@@ -149,6 +159,7 @@ function loadLastMovieId() {
     return value ? Number(value) : null;
 }
 
+// Настройки длительности прокрутки
 function saveWheelDuration(seconds) {
     localStorage.setItem(WHEEL_DURATION_KEY, String(seconds));
 }
