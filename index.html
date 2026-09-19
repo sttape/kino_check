@@ -37,12 +37,22 @@
                         <h2>Участвуют в колесе</h2>
                         <p class="muted" id="wheelCount">0 фильмов</p>
                     </div>
+                    <div class="wheel-filter-switch">
+                        <label class="filter-label">
+                            <input type="checkbox" id="wheelFilterUnwatched" checked>
+                            <span>Только не просмотренные</span>
+                        </label>
+                    </div>
                     <div id="wheelMovieList" class="wheel-movie-list"></div>
                 </aside>
 
                 <div class="wheel-stage">
-                    <h3>Барабан фильмов:</h3>
-                    <canvas id="wheelCanvas" width="900" height="900"></canvas>
+                    <div class="wheel-pointer"></div>
+                    <canvas id="wheelCanvas" width="1200" height="1200"></canvas>
+                    <div id="wheelCenterHub" class="wheel-center-hub">
+                        <img id="wheelCenterImg" class="wheel-center-img hidden" alt="Центр колеса">
+                        <span id="wheelCenterText" class="wheel-center-text">КИНО</span>
+                    </div>
                 </div>
 
                 <div class="wheel-sidebar">
@@ -55,7 +65,17 @@
                         <strong id="wheelDurationValue"></strong>
                     </label>
 
-                    <!-- ВСТАВИТЬ СЮДА -->
+                    <div class="wheel-setting">
+                        <span>Центр колеса (GIF / картинка)</span>
+                        <div class="hub-image-controls">
+                            <label class="hub-upload-btn">
+                                <span>Загрузить GIF</span>
+                                <input type="file" id="hubImageInput" accept="image/*" class="hidden">
+                            </label>
+                            <button type="button" id="resetHubImageBtn" class="secondary-button compact hidden">Удалить GIF</button>
+                        </div>
+                    </div>
+
                     <div class="wheel-mode-switch">
                         <label>Режим выбора:</label>
                         <div class="mode-buttons">
@@ -63,21 +83,23 @@
                             <button id="modeElimination" type="button" class="mode-btn">На выбывание</button>
                         </div>
                     </div>
-                    <!-- КОНЕЦ ВСТАВКИ -->
 
                     <button id="spinBtn" type="button">Крутить колесо</button>
+                    <button id="resetWheelBtn" type="button" class="hidden" style="background:rgba(148,163,184,0.12)">Сбросить колесо</button>
                     <div id="wheelResult" class="result-card"></div>
                     <a id="startWatchBtn" class="primary-link hidden" href="rating.html">Начать просмотр</a>
                 </div>
-
 
             </div>
         </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/wheel.js"></script>
+
+
 </body>
 
 </html>

@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Киноклуб — Фильмы</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body data-page="movies">
     <header class="site-header">
         <div>
@@ -22,18 +24,17 @@
 
     <main class="page-shell">
         <section class="hero-card compact">
-            <p class="eyebrow">Список фильмов</p>
-            <h1>Весь каталог в одном месте</h1>
-            <p class="lead">Смотрите жанр, комментарий, статус и среднюю оценку. После добавления или оценки список обновляется автоматически.</p>
+            <div class="hero-text">
+                <p class="eyebrow">Список фильмов</p>
+                <h1>Весь каталог в одном месте</h1>
+                <p class="lead">Смотрите жанр, комментарий, статус и оценку. Нажмите «Редактировать» для изменения или «Добавить» для нового фильма.</p>
+            </div>
         </section>
 
         <section class="panel">
             <div class="section-title">
                 <h2>Фильмы</h2>
-                <div class="movies-actions">
-                    <p class="muted">Пустой список тоже будет понятным, а не сломанным.</p>
-                    <button type="button" id="openAddMovieModalBtn" class="primary-button">Добавить фильм</button>
-                </div>
+                <span id="moviesTotalBadge" class="movies-count-badge"></span>
             </div>
             <div class="search-row">
                 <label class="search-field" for="moviesSearchInput">
@@ -50,15 +51,42 @@
                             <th>Жанр</th>
                             <th>Комментарий</th>
                             <th>Статус</th>
-                            <th>Средняя оценка</th>
+                            <th>Оценка</th>
                             <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
             </div>
+
+            <!-- Блок пагинации -->
+            <div id="moviesPagination" class="pagination-bar">
+                <div class="pagination-info">
+                    <span id="pageRangeText">Загрузка...</span>
+                    <label class="per-page-select-label">
+                        <span>На странице:</span>
+                        <select id="perPageSelect">
+                            <option value="6">6</option>
+                            <option value="8" selected>8</option>
+                            <option value="10">10</option>
+                            <option value="15">15</option>
+                            <option value="25">25</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="pagination-controls">
+                    <button type="button" id="prevPageBtn" class="page-btn" aria-label="Предыдущая страница">
+                        <span>←</span> Назад
+                    </button>
+                    <div id="paginationNumbers" class="pagination-numbers"></div>
+                    <button type="button" id="nextPageBtn" class="page-btn" aria-label="Следующая страница">
+                        Вперёд <span>→</span>
+                    </button>
+                </div>
+            </div>
         </section>
 
+        <!-- Модал редактирования -->
         <div id="movieModal" class="modal hidden" aria-hidden="true">
             <div class="modal-backdrop" data-modal-close></div>
             <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="movieModalTitle">
@@ -89,13 +117,15 @@
                         <select id="movieEditStatus">
                             <option>Не просмотрено</option>
                             <option>Просмотрено</option>
-                            <option>Не вышел</option>
+                            <option>Запланировано</option>
                             <option>Скоро выйдет</option>
+                            <option>Не вышел</option>
+                            <option>НЕ ОХОТА</option>
                         </select>
                     </label>
                     <label>
-                        <span>Оценки через запятую</span>
-                        <input type="text" id="movieEditRatings" placeholder="Например: 8, 9, 10">
+                        <span>Оценка (от -1 до 11)</span>
+                        <input type="number" id="movieEditRatings" min="-1" max="11" placeholder="Например: 8">
                     </label>
                     <div class="modal-actions">
                         <button type="button" class="secondary-button" data-modal-close>Отмена</button>
@@ -104,63 +134,13 @@
                 </form>
             </div>
         </div>
-
-        <div id="addMovieModal" class="modal hidden" aria-hidden="true">
-            <div class="modal-backdrop" data-add-modal-close></div>
-            <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="addMovieModalTitle">
-                <div class="modal-header">
-                    <div>
-                        <p class="eyebrow">Новый фильм</p>
-                        <h2 id="addMovieModalTitle">Добавить фильм</h2>
-                    </div>
-                    <button type="button" class="modal-close" data-add-modal-close aria-label="Закрыть окно">×</button>
-                </div>
-
-                <div class="import-card modal-import-card">
-                    <div>
-                        <h3>Импорт CSV</h3>
-                        <p class="muted">Загрузите список фильмов из CSV с колонками: title, genre, comment, status, ratings.</p>
-                    </div>
-                    <label class="file-input">
-                        <span>Загрузить CSV</span>
-                        <input type="file" id="csvInput" accept=".csv,text/csv">
-                    </label>
-                </div>
-
-                <form id="addMovieForm" class="movie-form modal-form">
-                    <label>
-                        <span>Название</span>
-                        <input type="text" id="title" required placeholder="Например, Интерстеллар">
-                    </label>
-                    <label>
-                        <span>Жанр</span>
-                        <input type="text" id="genre" placeholder="Фантастика, драма, комедия...">
-                    </label>
-                    <label>
-                        <span>Комментарий</span>
-                        <textarea id="comment" placeholder="Почему этот фильм хочется посмотреть?"></textarea>
-                    </label>
-                    <label>
-                        <span>Статус</span>
-                        <select id="status">
-                            <option>Не просмотрено</option>
-                            <option>Просмотрено</option>
-                            <option>Не вышел</option>
-                            <option>Скоро выйдет</option>
-                        </select>
-                    </label>
-                    <div class="modal-actions">
-                        <button type="button" class="secondary-button" data-add-modal-close>Отмена</button>
-                        <button type="submit" class="primary-button">Добавить фильм</button>
-                    </div>
-                </form>
-            </div>
-        </div>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/movies.js"></script>
-    <script src="js/addMovie.js"></script>
 </body>
+
 </html>
+

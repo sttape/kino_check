@@ -1,176 +1,213 @@
-function parseCsvLine(line) {
-    const result = [];
-    let current = "";
-    let insideQuotes = false;
+// addMovie.js
+// Страница add.html: форма добавления фильма + CSV-импорт
+// Весь код запускается только после полной загрузки DOM
 
-    for (let index = 0; index < line.length; index += 1) {
-        const character = line[index];
+window.addEventListener("DOMContentLoaded", () => {
 
-        if (character === '"') {
-            if (insideQuotes && line[index + 1] === '"') {
-                current += '"';
-                index += 1;
+    // ── Форма добавления ────────────────────────────────────────────────────
+    const addForm      = document.getElementById("addMovieForm");
+    const titleInput   = document.getElementById("movieTitle");
+    const genreInput   = document.getElementById("movieGenre");
+    const commentInput = document.getElementById("movieComment");
+    const statusInput  = document.getElementById("movieStatus");
+    const ratingInput  = document.getElementById("movieRating");
+
+    if (addForm) {
+        // Предзаполнение при редактировании (?id=…)
+        const params    = new URLSearchParams(window.location.search);
+        const editingId = params.get("id") ? Number(params.get("id")) : null;
+        const submitBtn = addForm.querySelector("button[type=submit]");
+
+        if (editingId) {
+            if (submitBtn) submitBtn.textContent = "Сохранить изменения";
+            supabase.from("movies").select("*").eq("id", editingId).single()
+                .then(({ data, error }) => {
+                    if (error || !data) { alert("Фильм не найден"); return; }
+                    if (titleInput)   titleInput.value   = data.title;
+                    if (genreInput)   genreInput.value   = data.genre   || "";
+                    if (commentInput) commentInput.value = data.comment || "";
+                    if (statusInput)  {
+                        let hasOption = false;
+                        for (const opt of statusInput.options) {
+                            if (opt.value === data.status) { hasOption = true; break; }
+                        }
+                        if (!hasOption && data.status) {
+                            const newOpt = document.createElement("option");
+                            newOpt.value = data.status;
+                            newOpt.textContent = data.status;
+                            statusInput.appendChild(newOpt);
+                        }
+                        statusInput.value = data.status || "Не просмотрено";
+                    }
+                    if (ratingInput)  ratingInput.value  = data.ratings ?? "";
+                });
+        }
+
+        addForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const ratingRaw = ratingInput && ratingInput.value.trim() !== "" ? Number(ratingInput.value) : null;
+            const movie = {
+                title:   titleInput   ? titleInput.value.trim()   : "",
+                genre:   genreInput   ? genreInput.value.trim()   : "",
+                comment: commentInput ? commentInput.value.trim() : "",
+                status:  statusInput  ? statusInput.value         : "Не просмотрено",
+                ratings: ratingRaw !== null && !isNaN(ratingRaw) ? ratingRaw : null
+            };
+
+            if (!movie.title) { alert("Название обязательно"); return; }
+
+            if (movie.ratings !== null && (movie.ratings < -1 || movie.ratings > 11)) {
+                alert("Оценка должна быть от -1 до 11");
+                return;
+            }
+
+            if (editingId) {
+                movie.id = editingId;
+                const ok = await updateMovie(movie);
+                if (ok) window.location.href = "movies.html";
             } else {
-                insideQuotes = !insideQuotes;
+                const ok = await insertMovie(movie);
+                if (ok) {
+                    addForm.reset();
+                    window.location.href = "movies.html";
+                }
             }
-            continue;
-        }
-
-        if (character === ',' && !insideQuotes) {
-            result.push(current.trim());
-            current = "";
-            continue;
-        }
-
-        current += character;
-    }
-
-    result.push(current.trim());
-    return result;
-}
-
-async function importMoviesFromCsv(csvText) {
-    const lines = csvText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-
-    if (lines.length === 0) {
-        throw new Error("CSV пустой");
-    }
-
-    const headers = parseCsvLine(lines[0]).map(header => header.toLowerCase());
-    const requiredFields = ["title"];
-    const hasRequiredFields = requiredFields.every(field => headers.includes(field));
-
-    if (!hasRequiredFields) {
-        throw new Error("CSV должен содержать колонку title");
-    }
-
-    const movies = await loadMovies();
-
-    lines.slice(1).forEach(line => {
-        const values = parseCsvLine(line);
-        if (values.every(value => value === "")) {
-            return;
-        }
-
-        const record = headers.reduce((accumulator, header, index) => {
-            accumulator[header] = values[index] || "";
-            return accumulator;
-        }, {});
-
-        const ratings = record.ratings
-            ? String(record.ratings)
-                .split(/[|;]/)
-                .map(value => Number(value.trim()))
-                .filter(value => Number.isFinite(value))
-            : [];
-
-        movies.push({
-            id: Date.now() + Math.random(),
-            title: record.title,
-            genre: record.genre || "",
-            comment: record.comment || "",
-            status: record.status || "Не просмотрено",
-            ratings
         });
-    });
-
-    await saveMovies(movies);
-}
-
-const addMovieForm = document.getElementById("addMovieForm");
-if (addMovieForm) {
-    addMovieForm.addEventListener("submit", async e => {
-        e.preventDefault();
-
-        const movies = await loadMovies();
-        const title = document.getElementById("title").value.trim();
-        const genre = document.getElementById("genre").value.trim();
-        const comment = document.getElementById("comment").value.trim();
-
-        movies.push({
-            id: Date.now(),
-            title,
-            genre,
-            comment,
-            status: document.getElementById("status").value,
-            ratings: []
-        });
-
-        await saveMovies(movies);
-        alert("Фильм добавлен!");
-        e.target.reset();
-
-        const addMovieModal = document.getElementById("addMovieModal");
-        if (addMovieModal) {
-            addMovieModal.classList.add("hidden");
-            addMovieModal.setAttribute("aria-hidden", "true");
-        }
-
-        if (document.body.dataset.page === "movies") {
-            if (typeof renderMoviesTable === "function") {
-                await renderMoviesTable();
-            }
-        }
-    });
-}
-
-const csvInput = document.getElementById("csvInput");
-if (csvInput) {
-    csvInput.addEventListener("change", async event => {
-        const file = event.target.files?.[0];
-        if (!file) {
-            return;
-        }
-
-        try {
-            const text = await file.text();
-            await importMoviesFromCsv(text);
-            alert("CSV импортирован!");
-            csvInput.value = "";
-            const addMovieModal = document.getElementById("addMovieModal");
-            if (addMovieModal) {
-                addMovieModal.classList.add("hidden");
-                addMovieModal.setAttribute("aria-hidden", "true");
-            }
-            if (document.body.dataset.page === "movies" && typeof renderMoviesTable === "function") {
-                await renderMoviesTable();
-            }
-        } catch (error) {
-            alert(error.message || "Не удалось импортировать CSV");
-            event.target.value = "";
-        }
-    });
-}
-
-const openAddMovieModalBtn = document.getElementById("openAddMovieModalBtn");
-const addMovieModal = document.getElementById("addMovieModal");
-
-function closeAddMovieModal() {
-    if (!addMovieModal) {
-        return;
     }
 
-    addMovieModal.classList.add("hidden");
-    addMovieModal.setAttribute("aria-hidden", "true");
-}
+    // ── CSV-импорт ──────────────────────────────────────────────────────────
+    const csvInput = document.getElementById("csvInput");
+    const statusEl = document.getElementById("csvImportStatus");
 
-if (openAddMovieModalBtn && addMovieModal) {
-    openAddMovieModalBtn.addEventListener("click", () => {
-        addMovieModal.classList.remove("hidden");
-        addMovieModal.setAttribute("aria-hidden", "false");
-        const titleField = document.getElementById("title");
-        if (titleField) {
-            titleField.focus();
+    function setStatus(msg, color) {
+        if (!statusEl) return;
+        statusEl.textContent = msg;
+        statusEl.style.color = color || "#94a3b8";
+    }
+
+    // Парсит одну строку CSV с поддержкой кавычек и экранирования ""
+    function parseRow(row) {
+        const cols = [];
+        let cur = "";
+        let inQ = false;
+        for (let i = 0; i < row.length; i++) {
+            const ch = row[i];
+            if (ch === '"') {
+                if (inQ && row[i + 1] === '"') { cur += '"'; i++; } // экран. кавычка
+                else inQ = !inQ;
+            } else if (ch === "," && !inQ) {
+                cols.push(cur.trim());
+                cur = "";
+            } else {
+                cur += ch;
+            }
         }
-    });
+        cols.push(cur.trim());
+        return cols;
+    }
 
-    addMovieModal.querySelectorAll("[data-add-modal-close]").forEach(button => {
-        button.addEventListener("click", closeAddMovieModal);
-    });
+    if (csvInput) {
+        csvInput.addEventListener("change", async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-    addMovieModal.addEventListener("click", event => {
-        if (event.target === addMovieModal) {
-            closeAddMovieModal();
-        }
-    });
-}
+            setStatus("Читаем файл…");
+
+            let text;
+            try { text = await file.text(); }
+            catch (err) { setStatus("Ошибка чтения: " + err.message, "salmon"); return; }
+
+            // Удаляем BOM (Excel добавляет \uFEFF в начало UTF-8 файлов)
+            text = text.replace(/^\uFEFF/, "");
+
+            // Определяем разделитель: запятая или точка с запятой (Excel в RU-локали)
+            const delimiter = text.indexOf(";") !== -1 && text.indexOf(",") === -1 ? ";" : ",";
+
+            // Переопределяем parseRow под текущий разделитель
+            const parseLine = (row) => {
+                const cols = [];
+                let cur = ""; let inQ = false;
+                for (let i = 0; i < row.length; i++) {
+                    const ch = row[i];
+                    if (ch === '"') {
+                        if (inQ && row[i + 1] === '"') { cur += '"'; i++; }
+                        else inQ = !inQ;
+                    } else if (ch === delimiter && !inQ) {
+                        cols.push(cur.trim());
+                        cur = "";
+                    } else { cur += ch; }
+                }
+                cols.push(cur.trim());
+                return cols;
+            };
+
+            const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+
+            if (lines.length < 2) {
+                setStatus("Файл пустой или нет строк данных.", "salmon");
+                return;
+            }
+
+            // Нормализуем заголовки: убираем BOM, кавычки, пробелы
+            const headers = parseLine(lines[0]).map(h =>
+                h.replace(/^\uFEFF/, "").replace(/^"|"$/g, "").trim().toLowerCase()
+            );
+
+            setStatus(`Заголовки: ${headers.join(", ")}`);
+
+            if (!headers.includes("title")) {
+                setStatus(
+                    `Колонка "title" не найдена. Обнаружены: ${headers.join(", ")}`,
+                    "salmon"
+                );
+                return;
+            }
+
+            const movies = lines.slice(1).map(line => {
+                // id-колонка из CSV игнорируется — Supabase генерирует свои ID
+                const cols = parseLine(line).map(c => c.replace(/^"|"$/g, "").trim());
+                const obj  = {};
+                headers.forEach((h, i) => { obj[h] = cols[i] ?? ""; });
+                const rVal = obj.ratings !== "" && !isNaN(Number(obj.ratings)) ? Number(obj.ratings) : null;
+                return {
+                    title:   obj.title   || "",
+                    genre:   obj.genre   || "",
+                    comment: obj.comment || "",
+                    status:  obj.status  || "Не просмотрено",
+                    ratings: (rVal !== null && rVal >= -1 && rVal <= 11) ? rVal : null
+                };
+            }).filter(m => m.title);
+
+            if (!movies.length) {
+                setStatus("Нет фильмов с заполненным title.", "salmon");
+                return;
+            }
+
+            let done = 0, errors = 0;
+            setStatus(`Импортируем 0 из ${movies.length}…`);
+
+            for (const movie of movies) {
+                const ok = await insertMovie(movie);
+                if (ok) {
+                    done++;
+                } else {
+                    errors++;
+                    console.error("CSV: ошибка вставки", movie.title);
+                }
+                setStatus(`Загружено ${done} из ${movies.length}…`);
+            }
+
+            e.target.value = "";
+
+            if (errors) {
+                setStatus(`Готово: ${done} добавлено, ${errors} с ошибкой.`, "#fbbf24");
+            } else {
+                setStatus(`✓ Импортировано ${done} фильм(ов)`, "#4ade80");
+            }
+
+            setTimeout(() => { window.location.href = "movies.html"; }, 1500);
+        });
+    }
+
+}); // конец DOMContentLoaded
+
