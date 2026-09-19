@@ -19,10 +19,14 @@
 
 html {
     scroll-behavior: smooth;
+    width: 100%;
+    overflow-x: hidden;
 }
 
 body {
     margin: 0;
+    width: 100%;
+    overflow-x: hidden;
     min-height: 100vh;
     font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     color: var(--text);
@@ -745,102 +749,6 @@ textarea {
     display: none !important;
 }
 
-@media (max-width: 960px) {
-    .site-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .wheel-panel-inner {
-        grid-template-columns: 1fr;
-    }
-
-    .wheel-list-panel {
-        order: 2;
-    }
-
-    .wheel-stage {
-        order: 1;
-        width: 100%;
-        max-height: none;
-    }
-
-    .wheel-sidebar {
-        order: 3;
-    }
-
-    .wheel-stage {
-        aspect-ratio: 1 / 1;
-        max-width: none;
-    }
-}
-
-@media (max-width: 720px) {
-    .page-shell,
-    .site-header {
-        width: min(100% - 20px, 1180px);
-    }
-
-    .hero-card,
-    .panel {
-        padding: 18px;
-        border-radius: 22px;
-    }
-
-    h1 {
-        max-width: none;
-    }
-
-    .site-nav {
-        width: 100%;
-    }
-
-    .nav-link,
-    .primary-link,
-    .secondary-link,
-    #spinBtn,
-    #saveRatingBtn,
-    #addMovieForm button {
-        width: 100%;
-    }
-
-    .import-card {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .modal {
-        padding: 12px;
-    }
-
-    .modal-dialog {
-        padding: 18px;
-        border-radius: 22px;
-    }
-
-    .movies-actions {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .search-row {
-        align-items: stretch;
-    }
-
-    .search-field {
-        flex-basis: 100%;
-    }
-
-    .section-title {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .wheel-stage {
-        aspect-ratio: 1 / 1;
-    }
-}
-
 .wheel-mode-switch {
     margin: 16px 0;
 }
@@ -1227,4 +1135,393 @@ body[data-page="movies"] .action-btn {
     cursor: default;
     color: var(--muted);
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   МОБИЛЬНАЯ АДАПТАЦИЯ (RESPONSIVE DESIGN)
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ── Планшеты и узкие экраны (<= 1024px) ────────────────────────────── */
+@media (max-width: 1024px) {
+    body[data-page="wheel"] .page-shell,
+    body[data-page="wheel"] .site-header {
+        width: min(calc(100% - 32px), 100%);
+    }
+
+    body[data-page="wheel"] .wheel-panel-inner {
+        grid-template-columns: 280px 1fr 300px;
+        gap: 16px;
+    }
+}
+
+/* ── Мобильные устройства и планшеты портретной ориентации (<= 920px) ── */
+@media (max-width: 920px) {
+    .site-header,
+    body[data-page="wheel"] .site-header,
+    body[data-page="movies"] .site-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 20px;
+        width: min(calc(100% - 20px), 100%);
+        margin: 0 auto;
+    }
+
+    .brand {
+        font-size: 1.35rem;
+    }
+
+    .brand-note {
+        margin: 2px 0 0;
+        font-size: 0.8rem;
+    }
+
+    .site-nav {
+        display: flex;
+        gap: 6px;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 2px 0 4px;
+        scrollbar-width: none;
+    }
+
+    .site-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .nav-link {
+        flex: 1 1 auto;
+        text-align: center;
+        white-space: nowrap;
+        padding: 9px 12px;
+        min-height: 40px;
+        font-size: 0.88rem;
+    }
+
+    .page-shell,
+    body[data-page="wheel"] .page-shell,
+    body[data-page="movies"] .page-shell {
+        width: min(calc(100% - 20px), 100%);
+        margin: 0 auto;
+        padding: 6px 0 28px;
+        gap: 12px;
+    }
+
+    .hero-card,
+    body[data-page="wheel"] .hero-card,
+    body[data-page="movies"] .hero-card {
+        padding: 14px 16px;
+        border-radius: 18px;
+    }
+
+    .hero-card h1,
+    body[data-page="wheel"] .hero-card h1,
+    body[data-page="movies"] .hero-card h1 {
+        font-size: clamp(1.25rem, 5vw, 1.6rem);
+        line-height: 1.2;
+    }
+
+    .hero-card .lead,
+    body[data-page="wheel"] .hero-card .lead,
+    body[data-page="movies"] .hero-card .lead {
+        font-size: 0.86rem;
+        line-height: 1.4;
+    }
+
+    .panel,
+    body[data-page="wheel"] .wheel-panel,
+    body[data-page="movies"] .panel {
+        padding: 16px 14px;
+        border-radius: 20px;
+    }
+
+    /* ── Колесо на мобильных ── */
+    body[data-page="wheel"] .wheel-panel-inner {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        width: 100%;
+        align-items: stretch;
+    }
+
+    body[data-page="wheel"] .wheel-stage {
+        order: 1;
+        width: min(100%, 88vw, 400px);
+        height: auto;
+        max-width: 400px;
+        max-height: none;
+        aspect-ratio: 1 / 1;
+        margin: 0 auto;
+        padding: 4px;
+    }
+
+    body[data-page="wheel"] .wheel-sidebar {
+        order: 2;
+        width: 100%;
+        display: grid;
+        gap: 12px;
+    }
+
+    body[data-page="wheel"] .wheel-sidebar h2 {
+        font-size: 1.25rem;
+    }
+
+    body[data-page="wheel"] #spinBtn {
+        width: 100%;
+        min-height: 48px;
+        font-size: 1.05rem;
+        border-radius: 999px;
+    }
+
+    body[data-page="wheel"] #resetWheelBtn,
+    body[data-page="wheel"] #startWatchBtn {
+        width: 100%;
+        min-height: 44px;
+        justify-content: center;
+    }
+
+    body[data-page="wheel"] .wheel-list-panel {
+        order: 3;
+        width: 100%;
+        margin-top: 6px;
+    }
+
+    body[data-page="wheel"] .wheel-movie-list {
+        max-height: 340px;
+        gap: 8px;
+    }
+
+    body[data-page="wheel"] .wheel-movie-item {
+        padding: 11px 12px;
+        gap: 10px;
+        border-radius: 14px;
+    }
+
+    body[data-page="wheel"] .wheel-index {
+        width: 30px;
+        height: 30px;
+        font-size: 0.85rem;
+    }
+
+    /* ── Каталог фильмов на мобильных ── */
+    body[data-page="movies"] .search-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    body[data-page="movies"] .search-field {
+        width: 100%;
+        flex: none;
+    }
+
+    body[data-page="movies"] .search-field input {
+        min-height: 42px;
+        font-size: 16px; /* Предотвращает авто-зум в iOS Safari */
+    }
+
+    body[data-page="movies"] .search-row .secondary-button {
+        width: 100%;
+        min-height: 40px;
+        font-size: 0.9rem;
+    }
+
+    .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 14px;
+        margin: 4px 0 10px;
+    }
+
+    table {
+        min-width: 600px;
+    }
+
+    body[data-page="movies"] table th,
+    body[data-page="movies"] table td {
+        padding: 9px 10px;
+        font-size: 0.85rem;
+    }
+
+    body[data-page="movies"] .comment-cell {
+        max-width: 150px;
+    }
+
+    .row-actions {
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+
+    body[data-page="movies"] .action-btn {
+        min-height: 32px;
+        padding: 0 10px;
+        font-size: 0.78rem;
+        white-space: nowrap;
+    }
+
+    .pagination-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding-top: 10px;
+    }
+
+    .pagination-info {
+        justify-content: space-between;
+        width: 100%;
+        font-size: 0.82rem;
+    }
+
+    .pagination-controls {
+        justify-content: center;
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .page-btn {
+        min-height: 38px;
+        padding: 0 14px;
+        font-size: 0.84rem;
+    }
+
+    .page-number-btn {
+        min-width: 36px;
+        height: 36px;
+        font-size: 0.84rem;
+    }
+
+    .modal {
+        padding: 10px;
+    }
+
+    .modal-dialog {
+        width: calc(100% - 16px);
+        margin: 8px;
+        padding: 16px;
+        border-radius: 20px;
+        max-height: 90vh;
+    }
+
+    .modal-actions {
+        flex-direction: column-reverse;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .modal-actions button {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    /* ── Формы добавления и оценки на мобильных ── */
+    .import-card {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 14px;
+        border-radius: 18px;
+    }
+
+    .import-card-actions {
+        width: 100%;
+        align-items: stretch;
+        min-width: 0;
+    }
+
+    .file-input {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .movie-form {
+        max-width: 100%;
+        gap: 14px;
+    }
+
+    .movie-form input,
+    .movie-form select,
+    .movie-form textarea {
+        font-size: 16px; /* Предотвращает авто-зум в iOS Safari */
+        min-height: 42px;
+    }
+
+    #addMovieForm button[type="submit"],
+    #saveRatingBtn {
+        width: 100%;
+        min-height: 48px;
+        font-size: 1rem;
+    }
+
+    .secondary-link {
+        width: 100%;
+        text-align: center;
+        display: block;
+        padding: 8px 0;
+    }
+}
+
+/* ── Смартфоны с компактным экраном (<= 480px) ───────────────────────── */
+@media (max-width: 480px) {
+    .site-header,
+    body[data-page="wheel"] .site-header,
+    body[data-page="movies"] .site-header {
+        padding: 10px 12px;
+        border-radius: 16px;
+    }
+
+    .page-shell,
+    body[data-page="wheel"] .page-shell,
+    body[data-page="movies"] .page-shell {
+        width: calc(100% - 16px);
+        padding: 4px 0 24px;
+    }
+
+    .panel,
+    body[data-page="wheel"] .wheel-panel,
+    body[data-page="movies"] .panel {
+        padding: 14px 12px;
+        border-radius: 18px;
+    }
+
+    body[data-page="wheel"] .wheel-stage {
+        width: min(100%, 86vw, 320px);
+        max-width: 320px;
+    }
+
+    .wheel-pointer {
+        border-left: 12px solid transparent;
+        border-right: 12px solid transparent;
+        border-top: 22px solid #f8fafc;
+    }
+
+    .hub-image-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .hub-upload-btn,
+    #resetHubImageBtn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ── Сенсорные устройства (Touch) ───────────────────────────────────── */
+@media (pointer: coarse) {
+    button,
+    .action-btn,
+    .nav-link,
+    .page-btn,
+    .page-number-btn,
+    .mode-btn,
+    select,
+    input[type="range"],
+    input[type="checkbox"] {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
 

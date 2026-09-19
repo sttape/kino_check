@@ -325,6 +325,15 @@ if (spinBtn) {
     });
 }
 
+if (wheelCanvas) {
+    wheelCanvas.style.cursor = "pointer";
+    wheelCanvas.addEventListener("click", () => {
+        if (spinning) return;
+        if (!wheelMovies.length) return;
+        spinWheel();
+    });
+}
+
 function spinWheel() {
     spinning = true;
     spinBtn.disabled = true;

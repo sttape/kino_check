@@ -114,16 +114,44 @@ window.addEventListener("DOMContentLoaded", () => {
             setStatus("Читаем файл…");
 
             let text;
-            try { text = await file.text(); }
-            catch (err) { setStatus("Ошибка чтения: " + err.message, "salmon"); return; }
+            try {
+                const buffer = await file.arrayBuffer();
+                // Пробуем UTF-8; если появляются символы замены U+FFFD — декодируем как windows-1251
+                let decoded = new TextDecoder("utf-8").decode(buffer);
+                if (decoded.includes("\uFFFD")) {
+                    try {
+                        decoded = new TextDecoder("windows-1251").decode(buffer);
+                    } catch (_) {}
+                }
+                text = decoded;
+            } catch (err) {
+                setStatus("Ошибка чтения: " + err.message, "salmon");
+                return;
+            }
 
-            // Удаляем BOM (Excel добавляет \uFEFF в начало UTF-8 файлов)
+            // Удаляем BOM
             text = text.replace(/^\uFEFF/, "");
 
-            // Определяем разделитель: запятая или точка с запятой (Excel в RU-локали)
-            const delimiter = text.indexOf(";") !== -1 && text.indexOf(",") === -1 ? ";" : ",";
+            const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
 
-            // Переопределяем parseRow под текущий разделитель
+            if (lines.length < 2) {
+                setStatus("Файл пустой или нет строк данных.", "salmon");
+                return;
+            }
+
+            // Надёжно определяем разделитель по первой строке
+            const firstLine = lines[0];
+            const semicolonCount = (firstLine.match(/;/g) || []).length;
+            const commaCount = (firstLine.match(/,/g) || []).length;
+            const tabCount = (firstLine.match(/\t/g) || []).length;
+
+            let delimiter = ",";
+            if (semicolonCount > 0 && semicolonCount >= commaCount && semicolonCount >= tabCount) {
+                delimiter = ";";
+            } else if (tabCount > 0 && tabCount > commaCount && tabCount > semicolonCount) {
+                delimiter = "\t";
+            }
+
             const parseLine = (row) => {
                 const cols = [];
                 let cur = ""; let inQ = false;
@@ -141,42 +169,78 @@ window.addEventListener("DOMContentLoaded", () => {
                 return cols;
             };
 
-            const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
-
-            if (lines.length < 2) {
-                setStatus("Файл пустой или нет строк данных.", "salmon");
-                return;
-            }
-
-            // Нормализуем заголовки: убираем BOM, кавычки, пробелы
-            const headers = parseLine(lines[0]).map(h =>
+            // Маппинг заголовков на поля модели
+            const rawHeaders = parseLine(lines[0]).map(h =>
                 h.replace(/^\uFEFF/, "").replace(/^"|"$/g, "").trim().toLowerCase()
             );
 
-            setStatus(`Заголовки: ${headers.join(", ")}`);
+            let titleIdx = -1, genreIdx = -1, commentIdx = -1, statusIdx = -1, ratingIdx = -1;
 
-            if (!headers.includes("title")) {
-                setStatus(
-                    `Колонка "title" не найдена. Обнаружены: ${headers.join(", ")}`,
-                    "salmon"
-                );
+            rawHeaders.forEach((h, idx) => {
+                if (titleIdx === -1 && (h === "title" || h.includes("название") || h === "фильм")) titleIdx = idx;
+                else if (genreIdx === -1 && (h === "genre" || h.includes("жанр"))) genreIdx = idx;
+                else if (commentIdx === -1 && (h === "comment" || h.includes("коммент") || h.includes("описание"))) commentIdx = idx;
+                else if (statusIdx === -1 && (h === "status" || h.includes("статус"))) statusIdx = idx;
+                else if (ratingIdx === -1 && (h === "ratings" || h === "rating" || h.includes("оценк") || h.includes("балл"))) ratingIdx = idx;
+            });
+
+            // Если заголовков нет, но есть 6 колонок как в Google Form:
+            // 0: время, 1: название, 2: жанр, 3: комментарий, 4: оценка, 5: статус
+            if (titleIdx === -1 && rawHeaders.length >= 2) {
+                titleIdx = 1;
+                genreIdx = 2;
+                commentIdx = 3;
+                ratingIdx = 4;
+                statusIdx = 5;
+            }
+
+            if (titleIdx === -1) {
+                setStatus(`Колонка с названием не найдена. Обнаружены: ${rawHeaders.filter(Boolean).join(", ")}`, "salmon");
                 return;
             }
 
+            function extractRating(val) {
+                if (!val) return null;
+                const m = val.match(/\((-?\d+)\)/);
+                if (m) {
+                    const n = Number(m[1]);
+                    if (!isNaN(n) && n >= -1 && n <= 11) return n;
+                }
+                const n2 = Number(val);
+                if (!isNaN(n2) && n2 >= -1 && n2 <= 11) return n2;
+                return null;
+            }
+
+            function normalizeStatus(val) {
+                if (!val) return "Не просмотрено";
+                const v = val.toLowerCase();
+                if (v.includes("не просмотрено")) return "Не просмотрено";
+                if (v.includes("просмотрено")) return "Просмотрено";
+                if (v.includes("запланировано")) return "Запланировано";
+                if (v.includes("скоро")) return "Скоро выйдет";
+                if (v.includes("не вышел")) return "Не вышел";
+                if (v.includes("не охота")) return "НЕ ОХОТА";
+                return val.trim();
+            }
+
             const movies = lines.slice(1).map(line => {
-                // id-колонка из CSV игнорируется — Supabase генерирует свои ID
                 const cols = parseLine(line).map(c => c.replace(/^"|"$/g, "").trim());
-                const obj  = {};
-                headers.forEach((h, i) => { obj[h] = cols[i] ?? ""; });
-                const rVal = obj.ratings !== "" && !isNaN(Number(obj.ratings)) ? Number(obj.ratings) : null;
+                const title = titleIdx !== -1 && cols[titleIdx] ? cols[titleIdx] : "";
+                if (!title) return null;
+
+                const genre = genreIdx !== -1 && cols[genreIdx] ? cols[genreIdx] : "";
+                const comment = commentIdx !== -1 && cols[commentIdx] ? cols[commentIdx] : "";
+                const rawRating = ratingIdx !== -1 && cols[ratingIdx] ? cols[ratingIdx] : "";
+                const rawStatus = statusIdx !== -1 && cols[statusIdx] ? cols[statusIdx] : "";
+
                 return {
-                    title:   obj.title   || "",
-                    genre:   obj.genre   || "",
-                    comment: obj.comment || "",
-                    status:  obj.status  || "Не просмотрено",
-                    ratings: (rVal !== null && rVal >= -1 && rVal <= 11) ? rVal : null
+                    title,
+                    genre,
+                    comment,
+                    status: normalizeStatus(rawStatus),
+                    ratings: extractRating(rawRating)
                 };
-            }).filter(m => m.title);
+            }).filter(Boolean);
 
             if (!movies.length) {
                 setStatus("Нет фильмов с заполненным title.", "salmon");
