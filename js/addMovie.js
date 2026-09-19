@@ -45,32 +45,38 @@ window.addEventListener("DOMContentLoaded", () => {
 
         addForm.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const ratingRaw = ratingInput && ratingInput.value.trim() !== "" ? Number(ratingInput.value) : null;
-            const movie = {
-                title:   titleInput   ? titleInput.value.trim()   : "",
-                genre:   genreInput   ? genreInput.value.trim()   : "",
-                comment: commentInput ? commentInput.value.trim() : "",
-                status:  statusInput  ? statusInput.value         : "Не просмотрено",
-                ratings: ratingRaw !== null && !isNaN(ratingRaw) ? ratingRaw : null
-            };
+            const submitBtn = addForm.querySelector("button[type=submit]");
+            if (submitBtn) submitBtn.disabled = true;
 
-            if (!movie.title) { alert("Название обязательно"); return; }
+            try {
+                const ratingRaw = ratingInput && ratingInput.value.trim() !== "" ? Number(ratingInput.value) : null;
+                const movie = {
+                    title:   titleInput   ? titleInput.value.trim()   : "",
+                    genre:   genreInput   ? genreInput.value.trim()   : "",
+                    comment: commentInput ? commentInput.value.trim() : "",
+                    status:  statusInput  ? statusInput.value         : "Не просмотрено",
+                    ratings: ratingRaw !== null && !isNaN(ratingRaw) ? ratingRaw : null
+                };
 
-            if (movie.ratings !== null && (movie.ratings < -1 || movie.ratings > 11)) {
-                alert("Оценка должна быть от -1 до 11");
-                return;
-            }
-
-            if (editingId) {
-                movie.id = editingId;
-                const ok = await updateMovie(movie);
-                if (ok) window.location.href = "movies.html";
-            } else {
-                const ok = await insertMovie(movie);
-                if (ok) {
-                    addForm.reset();
-                    window.location.href = "movies.html";
+                const validation = validateMovieInput(movie);
+                if (!validation.valid) {
+                    alert(validation.error);
+                    return;
                 }
+
+                if (editingId) {
+                    movie.id = editingId;
+                    const ok = await updateMovie(movie);
+                    if (ok) window.location.href = "movies.html";
+                } else {
+                    const ok = await insertMovie(movie);
+                    if (ok) {
+                        addForm.reset();
+                        window.location.href = "movies.html";
+                    }
+                }
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
             }
         });
     }
@@ -106,11 +112,21 @@ window.addEventListener("DOMContentLoaded", () => {
         return cols;
     }
 
+    const MAX_CSV_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+    const MAX_CSV_ROWS = 1000;
+
     if (csvInput) {
         csvInput.addEventListener("change", async (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
+            if (file.size > MAX_CSV_SIZE_BYTES) {
+                setStatus("Файл слишком большой. Максимальный размер: 5 МБ.", "salmon");
+                e.target.value = "";
+                return;
+            }
+
+            csvInput.disabled = true;
             setStatus("Читаем файл…");
 
             let text;
@@ -126,6 +142,7 @@ window.addEventListener("DOMContentLoaded", () => {
                 text = decoded;
             } catch (err) {
                 setStatus("Ошибка чтения: " + err.message, "salmon");
+                csvInput.disabled = false;
                 return;
             }
 
@@ -136,6 +153,13 @@ window.addEventListener("DOMContentLoaded", () => {
 
             if (lines.length < 2) {
                 setStatus("Файл пустой или нет строк данных.", "salmon");
+                csvInput.disabled = false;
+                return;
+            }
+
+            if (lines.length > MAX_CSV_ROWS) {
+                setStatus(`Файл содержит слишком много строк (${lines.length}). Лимит: ${MAX_CSV_ROWS} строк за раз.`, "salmon");
+                csvInput.disabled = false;
                 return;
             }
 
@@ -196,6 +220,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
             if (titleIdx === -1) {
                 setStatus(`Колонка с названием не найдена. Обнаружены: ${rawHeaders.filter(Boolean).join(", ")}`, "salmon");
+                csvInput.disabled = false;
                 return;
             }
 
@@ -244,6 +269,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
             if (!movies.length) {
                 setStatus("Нет фильмов с заполненным title.", "salmon");
+                csvInput.disabled = false;
                 return;
             }
 
@@ -262,6 +288,7 @@ window.addEventListener("DOMContentLoaded", () => {
             }
 
             e.target.value = "";
+            csvInput.disabled = false;
 
             if (errors) {
                 setStatus(`Готово: ${done} добавлено, ${errors} с ошибкой.`, "#fbbf24");

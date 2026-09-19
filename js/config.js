@@ -1,88 +1,249 @@
 // config.js
-// Инициализация Supabase-клиента
+// Инициализация Supabase-клиента и модуль валидации и безопасности
 
 const SUPABASE_URL = "https://ribxwepxmiywgyrkzjlp.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_z0SBAp1Urwwvo4s263EmyQ_geW6qy23";
 
-// var вместо const — не бросает ошибку при повторной загрузке скрипта
+// Внимание: в клиентском коде используется ТОЛЬКО публичный anon-ключ.
+// Секретный service_role ключ НИКОГДА не должен попадать на клиент!
+
 if (typeof supabase === "undefined" || !supabase || typeof supabase.from !== "function") {
     var supabase = (window.supabase && window.supabase.createClient)
         ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
         : null;
 }
 
+// ── Белые списки и ограничения безопасности ──────────────────────────────
+const ALLOWED_STATUSES = [
+    "Не просмотрено",
+    "Просмотрено",
+    "Запланировано",
+    "Скоро выйдет",
+    "Не вышел",
+    "НЕ ОХОТА"
+];
+
+const LIMITS = {
+    MAX_TITLE_LENGTH: 250,
+    MAX_GENRE_LENGTH: 250,
+    MAX_COMMENT_LENGTH: 2000,
+    MIN_RATING: -1,
+    MAX_RATING: 11
+};
+
+// Защита от CSV Formula Injection (нейтрализация формул для Excel)
+function sanitizeFormulaInjection(str) {
+    if (!str || typeof str !== "string") return "";
+    const trimmed = str.trim();
+    // Если строка начинается со спецсимволов формул Excel (=, +, -, @, \t, \r)
+    if (/^[=+\-@\t\r]/.test(trimmed)) {
+        return "'" + trimmed;
+    }
+    return trimmed;
+}
+
+// Санитизация текстовой строки
+function sanitizeText(str, maxLength) {
+    if (str == null) return "";
+    let s = String(str).trim();
+    // Убираем потенциально опасные управляющие ASCII символы (0-31), кроме переноса строки
+    s = s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+    s = sanitizeFormulaInjection(s);
+    if (maxLength && s.length > maxLength) {
+        s = s.slice(0, maxLength);
+    }
+    return s;
+}
+
+// Единая валидация данных фильма перед отправкой в базу
+function validateMovieInput(movie) {
+    if (!movie || typeof movie !== "object") {
+        return { valid: false, error: "Некорректные данные фильма." };
+    }
+
+    const title = String(movie.title || "").trim();
+    if (!title) {
+        return { valid: false, error: "Название фильма обязательно для заполнения." };
+    }
+    if (title.length > LIMITS.MAX_TITLE_LENGTH) {
+        return { valid: false, error: `Название фильма не должно превышать ${LIMITS.MAX_TITLE_LENGTH} символов.` };
+    }
+
+    const genre = String(movie.genre || "").trim();
+    if (genre.length > LIMITS.MAX_GENRE_LENGTH) {
+        return { valid: false, error: `Жанр не должен превышать ${LIMITS.MAX_GENRE_LENGTH} символов.` };
+    }
+
+    const comment = String(movie.comment || "").trim();
+    if (comment.length > LIMITS.MAX_COMMENT_LENGTH) {
+        return { valid: false, error: `Комментарий не должен превышать ${LIMITS.MAX_COMMENT_LENGTH} символов.` };
+    }
+
+    const status = String(movie.status || "Не просмотрено").trim();
+    if (status && !ALLOWED_STATUSES.includes(status)) {
+        return { valid: false, error: "Указан недопустимый статус фильма." };
+    }
+
+    let ratings = null;
+    if (movie.ratings !== null && movie.ratings !== undefined && movie.ratings !== "") {
+        const r = Number(movie.ratings);
+        if (isNaN(r) || !Number.isInteger(r) || r < LIMITS.MIN_RATING || r > LIMITS.MAX_RATING) {
+            return { valid: false, error: `Оценка должна быть целым числом от ${LIMITS.MIN_RATING} до ${LIMITS.MAX_RATING}.` };
+        }
+        ratings = r;
+    }
+
+    return {
+        valid: true,
+        sanitized: {
+            title: sanitizeText(title, LIMITS.MAX_TITLE_LENGTH),
+            genre: sanitizeText(genre, LIMITS.MAX_GENRE_LENGTH),
+            comment: sanitizeText(comment, LIMITS.MAX_COMMENT_LENGTH),
+            status: status || "Не просмотрено",
+            ratings: ratings
+        }
+    };
+}
+
+// Защита от флуда запросами (Client-side rate-limiting)
+let lastWriteTime = 0;
+const WRITE_COOLDOWN_MS = 250; // Минимальный интервал между одиночными операциями записи
+
+function checkWriteCooldown() {
+    const now = Date.now();
+    if (now - lastWriteTime < WRITE_COOLDOWN_MS) {
+        return false;
+    }
+    lastWriteTime = now;
+    return true;
+}
+
+// ── Работа с базой данных (CRUD) ─────────────────────────────────────────
+
 // Загрузка всех фильмов
 async function loadMovies() {
     if (!supabase) return [];
-    const { data, error } = await supabase
-        .from("movies")
-        .select("*")
-        .order("id", { ascending: true });
+    try {
+        const { data, error } = await supabase
+            .from("movies")
+            .select("id, title, genre, comment, status, ratings")
+            .order("id", { ascending: true });
 
-    if (error) {
-        console.error("Ошибка загрузки фильмов:", error.message);
+        if (error) {
+            console.error("Ошибка загрузки фильмов:", error.message);
+            return [];
+        }
+        return data || [];
+    } catch (err) {
+        console.error("Сетевая ошибка при загрузке фильмов:", err);
         return [];
     }
-
-    return data || [];
 }
 
 // Добавление фильма
-async function insertMovie(movie) {
+async function insertMovie(rawMovie) {
     if (!supabase) return false;
-    const { error } = await supabase
-        .from("movies")
-        .insert({
-            title: movie.title,
-            genre: movie.genre,
-            comment: movie.comment,
-            status: movie.status,
-            ratings: movie.ratings ?? null
-        });
 
-    if (error) {
-        console.error("Ошибка добавления фильма:", error.message);
-        alert("Ошибка добавления фильма: " + error.message);
+    const validation = validateMovieInput(rawMovie);
+    if (!validation.valid) {
+        alert(validation.error);
         return false;
     }
-    return true;
+
+    const movie = validation.sanitized;
+
+    try {
+        const { error } = await supabase
+            .from("movies")
+            .insert({
+                title: movie.title,
+                genre: movie.genre,
+                comment: movie.comment,
+                status: movie.status,
+                ratings: movie.ratings
+            });
+
+        if (error) {
+            console.error("Ошибка добавления фильма:", error.message);
+            alert("Ошибка сохранения: " + error.message);
+            return false;
+        }
+        return true;
+    } catch (err) {
+        console.error("Сетевая ошибка при добавлении:", err);
+        alert("Не удалось связаться с сервером.");
+        return false;
+    }
 }
 
 // Обновление фильма
-async function updateMovie(movie) {
+async function updateMovie(rawMovie) {
     if (!supabase) return false;
-    const { error } = await supabase
-        .from("movies")
-        .update({
-            title: movie.title,
-            genre: movie.genre,
-            comment: movie.comment,
-            status: movie.status,
-            ratings: movie.ratings ?? null
-        })
-        .eq("id", movie.id);
 
-    if (error) {
-        console.error("Ошибка обновления фильма:", error.message);
-        alert("Ошибка обновления фильма: " + error.message);
+    const id = Number(rawMovie.id);
+    if (!id || isNaN(id) || id <= 0) {
+        alert("Некорректный ID фильма");
         return false;
     }
-    return true;
+
+    const validation = validateMovieInput(rawMovie);
+    if (!validation.valid) {
+        alert(validation.error);
+        return false;
+    }
+
+    const movie = validation.sanitized;
+
+    try {
+        const { error } = await supabase
+            .from("movies")
+            .update({
+                title: movie.title,
+                genre: movie.genre,
+                comment: movie.comment,
+                status: movie.status,
+                ratings: movie.ratings
+            })
+            .eq("id", id);
+
+        if (error) {
+            console.error("Ошибка обновления фильма:", error.message);
+            alert("Ошибка сохранения: " + error.message);
+            return false;
+        }
+        return true;
+    } catch (err) {
+        console.error("Сетевая ошибка при обновлении:", err);
+        alert("Не удалось связаться с сервером.");
+        return false;
+    }
 }
 
 // Удаление фильма
-async function deleteMovie(id) {
+async function deleteMovie(rawId) {
     if (!supabase) return false;
-    const { error } = await supabase
-        .from("movies")
-        .delete()
-        .eq("id", id);
 
-    if (error) {
-        console.error("Ошибка удаления фильма:", error.message);
-        alert("Ошибка удаления фильма: " + error.message);
+    const id = Number(rawId);
+    if (!id || isNaN(id) || id <= 0) {
+        alert("Некорректный ID фильма");
         return false;
     }
-    return true;
-}
 
+    try {
+        const { error } = await supabase
+            .from("movies")
+            .delete()
+            .eq("id", id);
+
+        if (error) {
+            console.error("Ошибка удаления фильма:", error.message);
+            alert("Ошибка удаления: " + error.message);
+            return false;
+        }
+        return true;
+    } catch (err) {
+        console.error("Сетевая ошибка при удалении:", err);
+        alert("Не удалось связаться с сервером.");
+        return false;
+    }
+}

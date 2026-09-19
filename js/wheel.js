@@ -72,9 +72,12 @@ window.addEventListener("DOMContentLoaded", async () => {
 // ---------------------- ЦЕНТР КОЛЕСА (GIF / ИЗОБРАЖЕНИЕ) ----------------------
 
 function initHubImage() {
+    const ALLOWED_IMAGE_TYPES = ["image/gif", "image/png", "image/jpeg", "image/webp"];
+    const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024; // 3 MB
+
     try {
         const saved = localStorage.getItem(STORAGE_KEY_HUB_IMAGE);
-        if (saved) {
+        if (saved && typeof saved === "string" && saved.startsWith("data:image/") && !saved.startsWith("data:image/svg+xml")) {
             setHubImage(saved);
         }
     } catch (e) {}
@@ -84,14 +87,27 @@ function initHubImage() {
             const file = e.target.files && e.target.files[0];
             if (!file) return;
 
-            if (!file.type.startsWith("image/")) {
-                alert("Пожалуйста, выберите файл изображения (GIF, PNG, JPG, WebP)");
+            // Защита от SVG XSS и невалидных форматов
+            if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+                alert("Разрешены только растровые изображения (GIF, PNG, JPG, WebP). SVG не поддерживается в целях безопасности.");
+                e.target.value = "";
+                return;
+            }
+
+            // Ограничение на размер файла (защита от переполнения памяти)
+            if (file.size > MAX_IMAGE_SIZE_BYTES) {
+                alert("Размер файла не должен превышать 3 МБ.");
+                e.target.value = "";
                 return;
             }
 
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const dataUrl = ev.target.result;
+                if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/")) {
+                    alert("Ошибка при чтении изображения.");
+                    return;
+                }
                 try {
                     localStorage.setItem(STORAGE_KEY_HUB_IMAGE, dataUrl);
                 } catch (err) {
@@ -112,6 +128,9 @@ function initHubImage() {
 
 function setHubImage(dataUrl) {
     if (wheelCenterImg && wheelCenterText) {
+        if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/") || dataUrl.startsWith("data:image/svg+xml")) {
+            return;
+        }
         wheelCenterImg.src = dataUrl;
         wheelCenterImg.classList.remove("hidden");
         wheelCenterText.classList.add("hidden");

@@ -128,22 +128,43 @@ saveRatingBtn.addEventListener("click", async () => {
         ratings: rating
     };
 
-    const ok = await updateMovie(updatedMovie);
-    if (!ok) return;
-
-    // Обновляем кэш и карточку сразу, не ждём перехода
-    const idx = cachedMovies.findIndex(m => m.id === movie.id);
-    if (idx !== -1) {
-        cachedMovies[idx] = { ...movie, status: "Просмотрено", ratings: rating };
-        updateMovieCard(cachedMovies[idx]);
+    const validation = typeof validateMovieInput === "function" 
+        ? validateMovieInput(updatedMovie) 
+        : { valid: true };
+    if (!validation.valid) {
+        alert(validation.error);
+        return;
     }
 
-    saveRatingBtn.textContent = "✓ Сохранено";
+    const origText = saveRatingBtn.textContent;
     saveRatingBtn.disabled = true;
+    saveRatingBtn.textContent = "Сохранение…";
 
-    setTimeout(() => {
-        window.location.href = "movies.html";
-    }, 900);
+    try {
+        const ok = await updateMovie(updatedMovie);
+        if (!ok) {
+            saveRatingBtn.disabled = false;
+            saveRatingBtn.textContent = origText;
+            return;
+        }
+
+        // Обновляем кэш и карточку сразу, не ждём перехода
+        const idx = cachedMovies.findIndex(m => m.id === movie.id);
+        if (idx !== -1) {
+            cachedMovies[idx] = { ...movie, status: "Просмотрено", ratings: rating };
+            updateMovieCard(cachedMovies[idx]);
+        }
+
+        saveRatingBtn.textContent = "✓ Сохранено";
+        setTimeout(() => {
+            window.location.href = "movies.html";
+        }, 900);
+    } catch (err) {
+        console.error("Ошибка сохранения оценки:", err);
+        alert("Ошибка сохранения: " + (err.message || "Неизвестная ошибка"));
+        saveRatingBtn.disabled = false;
+        saveRatingBtn.textContent = origText;
+    }
 });
 
 // ── Утилиты ──────────────────────────────────────────────────────────────────

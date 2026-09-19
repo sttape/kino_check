@@ -98,8 +98,8 @@ function renderMovies(movies) {
             <td>${ratingHtml}</td>
             <td>
                 <div class="row-actions">
-                    <button type="button" class="action-btn action-btn-edit" onclick="editMovie(${movie.id})">Редактировать</button>
-                    <button type="button" class="action-btn action-btn-delete" onclick="deleteMovieConfirm(${movie.id})">Удалить</button>
+                    <button type="button" class="action-btn action-btn-edit" data-action="edit" data-id="${Number(movie.id)}">Редактировать</button>
+                    <button type="button" class="action-btn action-btn-delete" data-action="delete" data-id="${Number(movie.id)}">Удалить</button>
                 </div>
             </td>
         `;
@@ -314,37 +314,51 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Делегирование кликов по кнопкам таблицы (Редактировать / Удалить)
+    if (moviesTableBody) {
+        moviesTableBody.addEventListener("click", (e) => {
+            const btn = e.target.closest("button[data-action]");
+            if (!btn) return;
+            const action = btn.dataset.action;
+            const id = Number(btn.dataset.id);
+            if (!id || isNaN(id) || id <= 0) return;
+
+            if (action === "edit") {
+                editMovie(id);
+            } else if (action === "delete") {
+                deleteMovieConfirm(id);
+            }
+        });
+    }
+
     if (editForm) {
         editForm.addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            const ratingsRaw = document.getElementById("movieEditRatings").value.trim();
-            const ratingsNum = ratingsRaw !== "" ? Number(ratingsRaw) : null;
+            const submitBtn = editForm.querySelector("button[type=submit]");
+            if (submitBtn) submitBtn.disabled = true;
 
-            if (ratingsNum !== null && (isNaN(ratingsNum) || ratingsNum < -1 || ratingsNum > 11)) {
-                alert("Оценка должна быть от -1 до 11");
-                return;
-            }
+            try {
+                const ratingsRaw = document.getElementById("movieEditRatings").value.trim();
+                const ratingsNum = ratingsRaw !== "" ? Number(ratingsRaw) : null;
 
-            const movie = {
-                id:      Number(document.getElementById("movieEditId").value),
-                title:   document.getElementById("movieEditTitle").value.trim(),
-                genre:   document.getElementById("movieEditGenre").value.trim(),
-                comment: document.getElementById("movieEditComment").value.trim(),
-                status:  document.getElementById("movieEditStatus").value.trim(),
-                ratings: ratingsNum
-            };
+                const movie = {
+                    id:      Number(document.getElementById("movieEditId").value),
+                    title:   document.getElementById("movieEditTitle").value.trim(),
+                    genre:   document.getElementById("movieEditGenre").value.trim(),
+                    comment: document.getElementById("movieEditComment").value.trim(),
+                    status:  document.getElementById("movieEditStatus").value.trim(),
+                    ratings: ratingsNum
+                };
 
-            if (!movie.title) {
-                alert("Название фильма обязательно");
-                return;
-            }
-
-            const ok = await updateMovie(movie);
-            if (ok) {
-                editModal.classList.add("hidden");
-                editModal.setAttribute("aria-hidden", "true");
-                await loadAndRenderMovies();
+                const ok = await updateMovie(movie);
+                if (ok) {
+                    editModal.classList.add("hidden");
+                    editModal.setAttribute("aria-hidden", "true");
+                    await loadAndRenderMovies();
+                }
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
             }
         });
     }
