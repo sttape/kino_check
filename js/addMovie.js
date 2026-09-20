@@ -10,13 +10,12 @@ window.addEventListener("DOMContentLoaded", () => {
     const genreInput   = document.getElementById("movieGenre");
     const commentInput = document.getElementById("movieComment");
     const statusInput  = document.getElementById("movieStatus");
-    const ratingInput  = document.getElementById("movieRating");
-
     if (addForm) {
         // Предзаполнение при редактировании (?id=…)
         const params    = new URLSearchParams(window.location.search);
         const editingId = params.get("id") ? Number(params.get("id")) : null;
         const submitBtn = addForm.querySelector("button[type=submit]");
+        let existingRating = null;
 
         if (editingId) {
             if (submitBtn) submitBtn.textContent = "Сохранить изменения";
@@ -39,7 +38,7 @@ window.addEventListener("DOMContentLoaded", () => {
                         }
                         statusInput.value = data.status || "Не просмотрено";
                     }
-                    if (ratingInput)  ratingInput.value  = data.ratings ?? "";
+                    existingRating = data.ratings ?? null;
                 });
         }
 
@@ -49,13 +48,12 @@ window.addEventListener("DOMContentLoaded", () => {
             if (submitBtn) submitBtn.disabled = true;
 
             try {
-                const ratingRaw = ratingInput && ratingInput.value.trim() !== "" ? Number(ratingInput.value) : null;
                 const movie = {
                     title:   titleInput   ? titleInput.value.trim()   : "",
                     genre:   genreInput   ? genreInput.value.trim()   : "",
                     comment: commentInput ? commentInput.value.trim() : "",
                     status:  statusInput  ? statusInput.value         : "Не просмотрено",
-                    ratings: ratingRaw !== null && !isNaN(ratingRaw) ? ratingRaw : null
+                    ratings: editingId ? existingRating : null
                 };
 
                 const validation = validateMovieInput(movie);

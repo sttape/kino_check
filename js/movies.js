@@ -86,9 +86,9 @@ function renderMovies(movies) {
             ? `<span class="status-pill ${statusClass}">${escapeHtml(movie.status)}</span>`
             : `<span class="muted">-</span>`;
 
-        const ratingHtml = movie.ratings != null
-            ? `<span class="rating-badge">${movie.ratings}</span>`
-            : `<span class="muted">-</span>`;
+        const ratingHtml = typeof formatRatingBadge === "function"
+            ? formatRatingBadge(movie.ratings)
+            : (movie.ratings != null ? `<span class="rating-badge">${movie.ratings}</span>` : `<span class="muted">-</span>`);
 
         tr.innerHTML = `
             <td><strong style="color: var(--text); font-size: 0.94rem;">${escapeHtml(movie.title)}</strong></td>
@@ -253,7 +253,16 @@ window.editMovie = async function(id) {
         statusSelect.value = data.status || "Не просмотрено";
     }
 
-    document.getElementById("movieEditRatings").value  = data.ratings != null ? data.ratings : "";
+    const editRatingsEl = document.getElementById("movieEditRatings");
+    const editPreviewEl = document.getElementById("movieEditRatingPreview");
+    if (editRatingsEl) {
+        editRatingsEl.value = data.ratings != null ? data.ratings : "";
+        if (editPreviewEl && typeof formatRatingBadge === "function") {
+            editPreviewEl.innerHTML = formatRatingBadge(data.ratings);
+        }
+        const editCalcInfoEl = document.getElementById("movieEditRatingCalcInfo");
+        if (editCalcInfoEl) editCalcInfoEl.classList.add("hidden");
+    }
 
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
@@ -312,6 +321,42 @@ window.addEventListener("DOMContentLoaded", () => {
                 editModal.setAttribute("aria-hidden", "true");
             }
         });
+
+        const modalRatingInput = document.getElementById("movieEditRatings");
+        const modalRatingPreview = document.getElementById("movieEditRatingPreview");
+        const modalRatingCalc = document.getElementById("movieEditRatingCalcInfo");
+
+        function updateModalRatingUI() {
+            if (!modalRatingInput || !modalRatingPreview) return;
+            const raw = modalRatingInput.value.trim();
+            const parsed = typeof parseRatingInput === "function"
+                ? parseRatingInput(raw)
+                : { valid: true, isMultiple: false, numbers: [], average: null, finalRating: (raw !== "" ? Number(raw) : null), error: null };
+
+            if (!parsed.valid) {
+                if (modalRatingCalc) {
+                    modalRatingCalc.classList.remove("hidden");
+                    modalRatingCalc.textContent = parsed.error;
+                }
+                modalRatingPreview.innerHTML = `<span class="muted">-</span>`;
+                return;
+            }
+
+            if (parsed.isMultiple && modalRatingCalc) {
+                modalRatingCalc.classList.remove("hidden");
+                modalRatingCalc.innerHTML = `📊 Оценок: <b>${parsed.numbers.length}</b> &nbsp;|&nbsp; Среднее: <b>${parsed.average.toFixed(2)}</b> &nbsp;➔&nbsp; Итого: <b>${parsed.finalRating}</b>`;
+            } else if (modalRatingCalc) {
+                modalRatingCalc.classList.add("hidden");
+            }
+
+            if (typeof formatRatingBadge === "function") {
+                modalRatingPreview.innerHTML = formatRatingBadge(parsed.finalRating);
+            }
+        }
+
+        if (modalRatingInput) {
+            modalRatingInput.addEventListener("input", updateModalRatingUI);
+        }
     }
 
     // Делегирование кликов по кнопкам таблицы (Редактировать / Удалить)
@@ -340,7 +385,14 @@ window.addEventListener("DOMContentLoaded", () => {
 
             try {
                 const ratingsRaw = document.getElementById("movieEditRatings").value.trim();
-                const ratingsNum = ratingsRaw !== "" ? Number(ratingsRaw) : null;
+                const parsed = typeof parseRatingInput === "function"
+                    ? parseRatingInput(ratingsRaw)
+                    : { valid: true, finalRating: (ratingsRaw !== "" ? Number(ratingsRaw) : null) };
+
+                if (!parsed.valid) {
+                    alert(parsed.error || "Некорректная оценка");
+                    return;
+                }
 
                 const movie = {
                     id:      Number(document.getElementById("movieEditId").value),
@@ -348,7 +400,7 @@ window.addEventListener("DOMContentLoaded", () => {
                     genre:   document.getElementById("movieEditGenre").value.trim(),
                     comment: document.getElementById("movieEditComment").value.trim(),
                     status:  document.getElementById("movieEditStatus").value.trim(),
-                    ratings: ratingsNum
+                    ratings: parsed.finalRating
                 };
 
                 const ok = await updateMovie(movie);

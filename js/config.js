@@ -31,6 +31,102 @@ const LIMITS = {
     MAX_RATING: 11
 };
 
+// Форматирование бейджа оценки фильма по правилам проекта:
+// - оценка -1: красная надпись «хуйня»
+// - оценки 1..5: красная плашка
+// - оценки 6..10: зеленая плашка
+// - оценка 11: надпись «охуенный»
+function formatRatingBadge(rating) {
+    if (rating === null || rating === undefined || rating === "") {
+        return `<span class="muted">-</span>`;
+    }
+    const r = Number(rating);
+    if (isNaN(r)) {
+        return `<span class="muted">-</span>`;
+    }
+    if (r === -1) {
+        return `<span class="rating-text-terrible">хуйня</span>`;
+    }
+    if (r >= 1 && r <= 5) {
+        return `<span class="rating-badge rating-badge-red">${r}</span>`;
+    }
+    if (r >= 6 && r <= 10) {
+        return `<span class="rating-badge rating-badge-green">${r}</span>`;
+    }
+    if (r === 11) {
+        return `<span class="rating-text-awesome">охуенный</span>`;
+    }
+    if (r < 1) {
+        return `<span class="rating-text-terrible">хуйня</span>`;
+    }
+    return `<span class="rating-badge">${r}</span>`;
+}
+
+// Универсальный парсинг введенных оценок (одной или нескольких через запятую/пробел/слэш)
+function parseRatingInput(raw) {
+    if (raw === null || raw === undefined || String(raw).trim() === "") {
+        return { valid: true, isMultiple: false, numbers: [], average: null, finalRating: null, error: null };
+    }
+    const s = String(raw).trim();
+    // Ищем все числа, включая отрицательные (-1)
+    const tokens = s.match(/-?\d+(?:\.\d+)?/g);
+    if (!tokens || !tokens.length) {
+        return { 
+            valid: false, 
+            isMultiple: false, 
+            numbers: [], 
+            average: null, 
+            finalRating: null, 
+            error: "Введите оценку от -1 до 11 (или несколько оценок через запятую)" 
+        };
+    }
+
+    const numbers = [];
+    for (const t of tokens) {
+        const n = Number(t);
+        if (isNaN(n) || n < LIMITS.MIN_RATING || n > LIMITS.MAX_RATING) {
+            return { 
+                valid: false, 
+                isMultiple: tokens.length > 1, 
+                numbers: [], 
+                average: null, 
+                finalRating: null, 
+                error: `Оценка ${t} вне диапазона (от ${LIMITS.MIN_RATING} до ${LIMITS.MAX_RATING})` 
+            };
+        }
+        numbers.push(n);
+    }
+
+    if (numbers.length === 1) {
+        let single = Math.round(numbers[0]);
+        if (single < -1) single = -1;
+        if (single > 11) single = 11;
+        if (single === 0) single = numbers[0] < 0 ? -1 : 1;
+        return { valid: true, isMultiple: false, numbers, average: numbers[0], finalRating: single, error: null };
+    }
+
+    const sum = numbers.reduce((acc, v) => acc + v, 0);
+    const avg = sum / numbers.length;
+    let finalRating = Math.round(avg);
+    if (finalRating < -1) finalRating = -1;
+    if (finalRating > 11) finalRating = 11;
+    if (finalRating === 0) finalRating = avg < 0 ? -1 : 1;
+
+    return {
+        valid: true,
+        isMultiple: true,
+        numbers,
+        average: avg,
+        finalRating,
+        error: null
+    };
+}
+
+if (typeof window !== "undefined") {
+    window.formatRatingBadge = formatRatingBadge;
+    window.parseRatingInput = parseRatingInput;
+}
+
 // Защита от CSV Formula Injection (нейтрализация формул для Excel)
 function sanitizeFormulaInjection(str) {
     if (!str || typeof str !== "string") return "";
@@ -86,11 +182,11 @@ function validateMovieInput(movie) {
 
     let ratings = null;
     if (movie.ratings !== null && movie.ratings !== undefined && movie.ratings !== "") {
-        const r = Number(movie.ratings);
-        if (isNaN(r) || !Number.isInteger(r) || r < LIMITS.MIN_RATING || r > LIMITS.MAX_RATING) {
-            return { valid: false, error: `Оценка должна быть целым числом от ${LIMITS.MIN_RATING} до ${LIMITS.MAX_RATING}.` };
+        const parsed = parseRatingInput(movie.ratings);
+        if (!parsed.valid) {
+            return { valid: false, error: parsed.error || `Оценка должна быть числом от ${LIMITS.MIN_RATING} до ${LIMITS.MAX_RATING}.` };
         }
-        ratings = r;
+        ratings = parsed.finalRating;
     }
 
     return {

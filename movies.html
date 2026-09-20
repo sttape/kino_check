@@ -127,8 +127,13 @@
                         </select>
                     </label>
                     <label>
-                        <span>Оценка (от -1 до 11)</span>
-                        <input type="number" id="movieEditRatings" min="-1" max="11" placeholder="Например: 8">
+                        <span>Оценка (от -1 до 11 или несколько через запятую):</span>
+                        <input type="text" id="movieEditRatings" placeholder="Например: 8 или 7, 8, 9, 10">
+                        <div id="movieEditRatingCalcInfo" class="multi-rating-calc-info hidden"></div>
+                        <div class="rating-preview-row">
+                            <span class="rating-preview-label">Предпросмотр:</span>
+                            <div id="movieEditRatingPreview" class="rating-preview-result"><span class="muted">-</span></div>
+                        </div>
                     </label>
                     <div class="modal-actions">
                         <button type="button" class="secondary-button" data-modal-close>Отмена</button>

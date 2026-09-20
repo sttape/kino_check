@@ -42,10 +42,48 @@
                     <select id="ratingMovieSelect"></select>
                 </label>
                 <div id="ratingMovieTitle" class="selected-movie"></div>
+
+                <!-- Быстрый выбор оценки -->
+                <div class="quick-rating-wrap">
+                    <span>Быстрый выбор оценки:</span>
+                    <div class="quick-rating-buttons">
+                        <button type="button" class="quick-rate-btn btn-terrible" data-rate="-1" title="-1 (хуйня)">-1 хуйня</button>
+                        <button type="button" class="quick-rate-btn btn-red" data-rate="1">1</button>
+                        <button type="button" class="quick-rate-btn btn-red" data-rate="2">2</button>
+                        <button type="button" class="quick-rate-btn btn-red" data-rate="3">3</button>
+                        <button type="button" class="quick-rate-btn btn-red" data-rate="4">4</button>
+                        <button type="button" class="quick-rate-btn btn-red" data-rate="5">5</button>
+                        <button type="button" class="quick-rate-btn btn-green" data-rate="6">6</button>
+                        <button type="button" class="quick-rate-btn btn-green" data-rate="7">7</button>
+                        <button type="button" class="quick-rate-btn btn-green" data-rate="8">8</button>
+                        <button type="button" class="quick-rate-btn btn-green" data-rate="9">9</button>
+                        <button type="button" class="quick-rate-btn btn-green" data-rate="10">10</button>
+                        <button type="button" class="quick-rate-btn btn-awesome" data-rate="11" title="11 (охуенный)">11 охуенный</button>
+                    </div>
+                </div>
+
+                <!-- Блок нескольких оценок участников киноклуба -->
+                <div class="multi-rating-container">
+                    <div class="multi-rating-header">
+                        <span class="multi-rating-title">👥 Оценки нескольких участников (расчет среднего)</span>
+                    </div>
+                    <label>
+                        <span>Введите оценки участников через запятую или пробел:</span>
+                        <input type="text" id="multiRatingInput" placeholder="Например: 7, 8, 9, 10 или 5 8 9">
+                    </label>
+                    <div id="multiRatingCalcInfo" class="multi-rating-calc-info hidden"></div>
+                </div>
+
+                <!-- Поле итоговой оценки фильма -->
                 <label>
-                    <span>Оценка</span>
-                    <input type="number" id="ratingInput" min="-1" max="11" placeholder="От -1 до 11">
+                    <span>Итоговая оценка фильма (от -1 до 11 или несколько через запятую):</span>
+                    <input type="text" id="ratingInput" placeholder="От -1 до 11 (или например: 7, 8, 9)">
+                    <div class="rating-preview-row">
+                        <span class="rating-preview-label">Как отобразится:</span>
+                        <div id="ratingLivePreview" class="rating-preview-result"><span class="muted">-</span></div>
+                    </div>
                 </label>
+
                 <button id="saveRatingBtn" type="button">Сохранить оценку</button>
                 <a class="secondary-link" href="index.html">Вернуться к колесу</a>
             </form>
