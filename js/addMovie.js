@@ -44,6 +44,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
         addForm.addEventListener("submit", async (e) => {
             e.preventDefault();
+
+            if (typeof ensureAuthenticated === "function" && !isAuthenticated()) {
+                const authOk = await ensureAuthenticated(editingId ? "Для изменения фильма" : "Для добавления фильма в каталог");
+                if (!authOk) return;
+            }
+
             const submitBtn = addForm.querySelector("button[type=submit]");
             if (submitBtn) submitBtn.disabled = true;
 
@@ -117,6 +123,14 @@ window.addEventListener("DOMContentLoaded", () => {
         csvInput.addEventListener("change", async (e) => {
             const file = e.target.files[0];
             if (!file) return;
+
+            if (typeof ensureAuthenticated === "function" && !isAuthenticated()) {
+                const authOk = await ensureAuthenticated("Для импорта фильмов из CSV");
+                if (!authOk) {
+                    e.target.value = "";
+                    return;
+                }
+            }
 
             if (file.size > MAX_CSV_SIZE_BYTES) {
                 setStatus("Файл слишком большой. Максимальный размер: 5 МБ.", "salmon");

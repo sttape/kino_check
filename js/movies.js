@@ -14,6 +14,50 @@ let allMovies = [];
 let filteredMovies = [];
 let currentPage = 1;
 let pageSize = 8;
+let currentSort = { key: null, direction: null };
+
+// Обновление индикаторов сортировки в шапке таблицы
+function updateSortIndicators() {
+    const headers = document.querySelectorAll("#moviesTable th[data-sort-key]");
+    headers.forEach(th => {
+        const key = th.dataset.sortKey;
+        const icon = th.querySelector(".sort-icon");
+        if (key === currentSort.key && currentSort.direction) {
+            th.classList.add("active-sort");
+            th.setAttribute("aria-sort", currentSort.direction === "asc" ? "ascending" : "descending");
+            if (icon) {
+                icon.textContent = currentSort.direction === "asc" ? "▲" : "▼";
+            }
+        } else {
+            th.classList.remove("active-sort");
+            th.setAttribute("aria-sort", "none");
+            if (icon) {
+                icon.textContent = "↕";
+            }
+        }
+    });
+}
+
+// Обработка клика по заголовку сортируемой колонки (asc -> desc -> default)
+function handleSortClick(key) {
+    if (currentSort.key === key) {
+        if (currentSort.direction === "asc") {
+            currentSort.direction = "desc";
+        } else if (currentSort.direction === "desc") {
+            currentSort.key = null;
+            currentSort.direction = null;
+        } else {
+            currentSort.direction = "asc";
+        }
+    } else {
+        currentSort.key = key;
+        currentSort.direction = "asc";
+    }
+
+    currentPage = 1;
+    updateSortIndicators();
+    applyFilterAndRender();
+}
 
 // Загрузка и отображение фильмов
 async function loadAndRenderMovies() {
@@ -21,7 +65,7 @@ async function loadAndRenderMovies() {
     applyFilterAndRender();
 }
 
-// Применение фильтра поиска и отрисовка текущей страницы
+// Применение фильтра поиска, сортировки и отрисовка текущей страницы
 function applyFilterAndRender() {
     const query = (searchInput ? searchInput.value : "").trim().toLowerCase();
 
@@ -36,7 +80,42 @@ function applyFilterAndRender() {
         );
     }
 
-    const totalPages = Math.max(1, Math.ceil(filteredMovies.length / pageSize));
+    let displayedMovies = [...filteredMovies];
+
+    if (currentSort.key && currentSort.direction) {
+        const { key, direction } = currentSort;
+        const modifier = direction === "desc" ? -1 : 1;
+
+        displayedMovies.sort((a, b) => {
+            const valA = a[key];
+            const valB = b[key];
+
+            // Сортировка по оценкам
+            if (key === "ratings") {
+                const numA = (valA !== null && valA !== undefined && valA !== "") ? Number(valA) : null;
+                const numB = (valB !== null && valB !== undefined && valB !== "") ? Number(valB) : null;
+
+                // Пустые оценки всегда помещаются в конец списка
+                if (numA === null && numB === null) return 0;
+                if (numA === null) return 1;
+                if (numB === null) return -1;
+
+                return (numA - numB) * modifier;
+            }
+
+            // Текстовая локализованная сортировка (название, жанр, статус)
+            const strA = (valA != null ? String(valA) : "").trim();
+            const strB = (valB != null ? String(valB) : "").trim();
+
+            if (!strA && !strB) return 0;
+            if (!strA) return 1;
+            if (!strB) return -1;
+
+            return strA.localeCompare(strB, "ru", { numeric: true, sensitivity: "base" }) * modifier;
+        });
+    }
+
+    const totalPages = Math.max(1, Math.ceil(displayedMovies.length / pageSize));
     if (currentPage > totalPages) {
         currentPage = totalPages;
     }
@@ -45,10 +124,10 @@ function applyFilterAndRender() {
     }
 
     const startIdx = (currentPage - 1) * pageSize;
-    const pageMovies = filteredMovies.slice(startIdx, startIdx + pageSize);
+    const pageMovies = displayedMovies.slice(startIdx, startIdx + pageSize);
 
     renderMovies(pageMovies);
-    renderPagination(filteredMovies.length, totalPages);
+    renderPagination(displayedMovies.length, totalPages);
 }
 
 // Определение CSS-класса для плашки статуса
@@ -98,8 +177,8 @@ function renderMovies(movies) {
             <td>${ratingHtml}</td>
             <td>
                 <div class="row-actions">
-                    <button type="button" class="action-btn action-btn-edit" data-action="edit" data-id="${Number(movie.id)}">Редактировать</button>
-                    <button type="button" class="action-btn action-btn-delete" data-action="delete" data-id="${Number(movie.id)}">Удалить</button>
+                    <button type="button" class="action-btn action-btn-edit" data-action="edit" data-id="${Number(movie.id)}" title="Редактировать" aria-label="Редактировать">✏️</button>
+                    <button type="button" class="action-btn action-btn-delete" data-action="delete" data-id="${Number(movie.id)}" title="Удалить" aria-label="Удалить">🗑️</button>
                 </div>
             </td>
         `;
@@ -207,6 +286,10 @@ function pluralizeMovies(n) {
 
 // Удаление (вызывается через onclick)
 window.deleteMovieConfirm = async function(id) {
+    if (typeof ensureAuthenticated === "function" && !isAuthenticated()) {
+        const authOk = await ensureAuthenticated("Для удаления фильма");
+        if (!authOk) return;
+    }
     if (!confirm("Удалить фильм?")) return;
     const ok = await deleteMovie(id);
     if (ok) {
@@ -216,6 +299,11 @@ window.deleteMovieConfirm = async function(id) {
 
 // Редактирование фильма
 window.editMovie = async function(id) {
+    if (typeof ensureAuthenticated === "function" && !isAuthenticated()) {
+        const authOk = await ensureAuthenticated("Для редактирования фильма");
+        if (!authOk) return;
+    }
+
     const modal = document.getElementById("movieModal");
     if (!modal) {
         window.location.href = `add.html?id=${id}`;
@@ -302,6 +390,20 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Сортировка по колонкам таблицы
+    const sortHeaders = document.querySelectorAll("#moviesTable th[data-sort-key]");
+    sortHeaders.forEach(th => {
+        const key = th.dataset.sortKey;
+        th.addEventListener("click", () => handleSortClick(key));
+        th.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleSortClick(key);
+            }
+        });
+    });
+    updateSortIndicators();
+
     // Форма редактирования
     const editModal = document.getElementById("movieModal");
     const editForm  = document.getElementById("movieEditForm");
@@ -379,6 +481,11 @@ window.addEventListener("DOMContentLoaded", () => {
     if (editForm) {
         editForm.addEventListener("submit", async (e) => {
             e.preventDefault();
+
+            if (typeof ensureAuthenticated === "function" && !isAuthenticated()) {
+                const authOk = await ensureAuthenticated("Для сохранения изменений фильма");
+                if (!authOk) return;
+            }
 
             const submitBtn = editForm.querySelector("button[type=submit]");
             if (submitBtn) submitBtn.disabled = true;

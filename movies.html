@@ -50,11 +50,19 @@
                 <table id="moviesTable">
                     <thead>
                         <tr>
-                            <th>Название</th>
-                            <th>Жанр</th>
+                            <th class="sortable" data-sort-key="title" role="button" tabindex="0" title="Сортировать по названию">
+                                <span class="th-content">Название <span class="sort-icon" aria-hidden="true">↕</span></span>
+                            </th>
+                            <th class="sortable" data-sort-key="genre" role="button" tabindex="0" title="Сортировать по жанру">
+                                <span class="th-content">Жанр <span class="sort-icon" aria-hidden="true">↕</span></span>
+                            </th>
                             <th>Комментарий</th>
-                            <th>Статус</th>
-                            <th>Оценка</th>
+                            <th class="sortable" data-sort-key="status" role="button" tabindex="0" title="Сортировать по статусу">
+                                <span class="th-content">Статус <span class="sort-icon" aria-hidden="true">↕</span></span>
+                            </th>
+                            <th class="sortable" data-sort-key="ratings" role="button" tabindex="0" title="Сортировать по оценке">
+                                <span class="th-content">Оценка <span class="sort-icon" aria-hidden="true">↕</span></span>
+                            </th>
                             <th>Действия</th>
                         </tr>
                     </thead>

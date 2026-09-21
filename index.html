@@ -62,11 +62,15 @@
                     <h2>Готовы выбрать фильм?</h2>
                     <p id="wheelHint" class="muted">Добавьте несколько фильмов, затем нажмите кнопку вращения.</p>
 
-                    <label class="wheel-setting">
-                        <span>Длительность прокрутки, сек</span>
-                        <input id="wheelDurationInput" type="range" min="2" max="12" step="1">
-                        <strong id="wheelDurationValue"></strong>
-                    </label>
+                    <div class="wheel-setting">
+                        <label for="wheelDurationInput">
+                            <span>Длительность прокрутки</span>
+                        </label>
+                        <div class="duration-input-wrap">
+                            <input id="wheelDurationInput" type="number" min="1" max="60" step="1" placeholder="5">
+                            <span class="duration-unit">сек</span>
+                        </div>
+                    </div>
 
                     <div class="wheel-setting">
                         <span>Центр колеса (GIF / картинка)</span>

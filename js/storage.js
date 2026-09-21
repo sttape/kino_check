@@ -8,10 +8,10 @@ const STORAGE_KEY_LAST_MOVIE_ID = "last_movie_id";
 function loadWheelDuration() {
     const raw = localStorage.getItem(STORAGE_KEY_WHEEL_DURATION);
     const value = Number(raw);
-    if (!raw || Number.isNaN(value) || value < 2 || value > 12) {
+    if (!raw || Number.isNaN(value) || value < 1 || value > 60) {
         return 5; // значение по умолчанию
     }
-    return value;
+    return Math.round(value);
 }
 
 function saveWheelDuration(seconds) {

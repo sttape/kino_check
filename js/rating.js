@@ -1,22 +1,27 @@
 // rating.js
-// Страница выставления оценки фильму
+// Страница выставления оценки фильму с текстовым поиском фильма
 
-const movieSelect         = document.getElementById("ratingMovieSelect");
-const ratingInput         = document.getElementById("ratingInput");
-const movieTitleEl        = document.getElementById("ratingMovieTitle");
-const saveRatingBtn       = document.getElementById("saveRatingBtn");
-const multiRatingInput    = document.getElementById("multiRatingInput");
+const movieSearchInput   = document.getElementById("ratingMovieSearchInput");
+const movieIdInput       = document.getElementById("ratingMovieId");
+const searchResults      = document.getElementById("movieSearchResults");
+const clearSearchBtn     = document.getElementById("clearMovieSearchBtn");
+const ratingInput        = document.getElementById("ratingInput");
+const movieTitleEl       = document.getElementById("ratingMovieTitle");
+const saveRatingBtn      = document.getElementById("saveRatingBtn");
+const multiRatingInput   = document.getElementById("multiRatingInput");
 const multiRatingCalcInfo = document.getElementById("multiRatingCalcInfo");
-const ratingLivePreview   = document.getElementById("ratingLivePreview");
-const quickRateButtons     = document.querySelectorAll(".quick-rate-btn");
+const ratingLivePreview  = document.getElementById("ratingLivePreview");
+const quickRateButtons   = document.querySelectorAll(".quick-rate-btn");
 
 // Если элементов формы нет — скрипт не на своей странице
-if (!movieSelect || !saveRatingBtn) {
+if (!movieSearchInput || !saveRatingBtn) {
     void 0; // выходим без ошибок
 } else {
 
-// Кэш фильмов, чтобы не делать лишние запросы
+// Кэш фильмов
 let cachedMovies = [];
+let selectedMovie = null;
+let currentFocusIndex = -1;
 
 // Статусные цвета
 const STATUS_COLORS = {
@@ -84,6 +89,144 @@ function calculateMultiRating() {
     }
 }
 
+// ── Выбор фильма ─────────────────────────────────────────────────────────────
+function selectMovie(movie) {
+    if (!movie) {
+        selectedMovie = null;
+        if (movieIdInput) movieIdInput.value = "";
+        if (movieSearchInput) movieSearchInput.value = "";
+        if (clearSearchBtn) clearSearchBtn.classList.add("hidden");
+        updateMovieCard(null);
+        syncRatingInputWithMovie(null);
+        closeDropdown();
+        return;
+    }
+
+    selectedMovie = movie;
+    if (movieIdInput) movieIdInput.value = movie.id;
+    if (movieSearchInput) movieSearchInput.value = movie.title;
+    if (clearSearchBtn) clearSearchBtn.classList.remove("hidden");
+
+    closeDropdown();
+    updateMovieCard(movie);
+    syncRatingInputWithMovie(movie);
+}
+
+function syncRatingInputWithMovie(movie) {
+    if (!ratingInput) return;
+    if (multiRatingInput) multiRatingInput.value = "";
+    if (multiRatingCalcInfo) multiRatingCalcInfo.classList.add("hidden");
+
+    if (movie && movie.ratings != null) {
+        ratingInput.value = movie.ratings;
+        updateRatingUI(movie.ratings);
+    } else {
+        ratingInput.value = "";
+        updateRatingUI(null);
+    }
+}
+
+function updateMovieCard(movie) {
+    if (!movieTitleEl) return;
+
+    if (!movie) {
+        movieTitleEl.innerHTML = `<span class="muted">Найдите и выберите фильм для оценки</span>`;
+        return;
+    }
+
+    const bgColor = STATUS_COLORS[movie.status] || "rgba(148,163,184,0.14)";
+    const ratingDisplay = movie.ratings != null 
+        ? (typeof formatRatingBadge === "function" ? formatRatingBadge(movie.ratings) : `⭐ ${movie.ratings}`)
+        : `<span class="muted">Не оценён</span>`;
+
+    movieTitleEl.innerHTML = `
+        <div class="movie-card-preview" style="background:${bgColor}">
+            <div class="movie-card-preview-header">
+                <strong class="movie-card-preview-title">${escapeHtml(movie.title)}</strong>
+                <span class="movie-card-preview-rating">${ratingDisplay}</span>
+            </div>
+            ${movie.genre ? `<p class="movie-card-preview-meta">🎬 ${escapeHtml(movie.genre)}</p>` : ""}
+            ${movie.status ? `<p class="movie-card-preview-meta">📌 ${escapeHtml(movie.status)}</p>` : ""}
+            ${movie.comment ? `<p class="movie-card-preview-comment">${escapeHtml(movie.comment)}</p>` : ""}
+        </div>
+    `;
+}
+
+// ── Выпадающий список результатов поиска ──────────────────────────────────────
+function closeDropdown() {
+    if (searchResults) {
+        searchResults.classList.add("hidden");
+        searchResults.innerHTML = "";
+    }
+    currentFocusIndex = -1;
+}
+
+function renderSearchResults(query) {
+    if (!searchResults) return;
+
+    const q = (query || "").trim().toLowerCase();
+    const filtered = q
+        ? cachedMovies.filter(m =>
+            (m.title || "").toLowerCase().includes(q) ||
+            (m.genre || "").toLowerCase().includes(q)
+          )
+        : cachedMovies.slice(0, 20);
+
+    if (!filtered.length) {
+        searchResults.innerHTML = `<div class="movie-search-empty">Фильмы не найдены</div>`;
+        searchResults.classList.remove("hidden");
+        currentFocusIndex = -1;
+        return;
+    }
+
+    searchResults.innerHTML = "";
+    filtered.forEach((movie, idx) => {
+        const item = document.createElement("div");
+        item.className = "movie-search-item";
+        item.dataset.id = movie.id;
+        item.setAttribute("role", "option");
+        item.setAttribute("id", `search-item-${idx}`);
+
+        const ratingBadge = movie.ratings != null
+            ? (typeof formatRatingBadge === "function" ? formatRatingBadge(movie.ratings) : `<span class="rating-badge">${movie.ratings}</span>`)
+            : "";
+
+        item.innerHTML = `
+            <div class="movie-search-item-info">
+                <span class="movie-search-item-title">${escapeHtml(movie.title)}</span>
+                <span class="movie-search-item-meta">
+                    ${movie.genre ? `<span>🎬 ${escapeHtml(movie.genre)}</span>` : ""}
+                    ${movie.status ? `<span>📌 ${escapeHtml(movie.status)}</span>` : ""}
+                </span>
+            </div>
+            <div class="movie-search-item-badge">
+                ${ratingBadge}
+            </div>
+        `;
+
+        item.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            selectMovie(movie);
+        });
+
+        searchResults.appendChild(item);
+    });
+
+    searchResults.classList.remove("hidden");
+    currentFocusIndex = -1;
+}
+
+function updateHighlight(items) {
+    items.forEach((item, idx) => {
+        if (idx === currentFocusIndex) {
+            item.classList.add("focused");
+            item.scrollIntoView({ block: "nearest" });
+        } else {
+            item.classList.remove("focused");
+        }
+    });
+}
+
 // ── Инициализация ────────────────────────────────────────────────────────────
 window.addEventListener("DOMContentLoaded", async () => {
     // Слушатели событий ввода оценки
@@ -132,21 +275,72 @@ window.addEventListener("DOMContentLoaded", async () => {
         });
     });
 
+    // Загрузка списка фильмов
     cachedMovies = await loadMovies();
-    movieSelect.innerHTML = "";
 
-    if (!cachedMovies.length) {
-        movieSelect.innerHTML = `<option value="">Нет фильмов</option>`;
-        updateMovieCard(null);
-        return;
+    // Слушатели для поля поиска фильма
+    if (movieSearchInput) {
+        movieSearchInput.addEventListener("input", () => {
+            const val = movieSearchInput.value;
+            if (clearSearchBtn) {
+                clearSearchBtn.classList.toggle("hidden", !val);
+            }
+            if (selectedMovie && selectedMovie.title !== val) {
+                if (movieIdInput) movieIdInput.value = "";
+            }
+            renderSearchResults(val);
+        });
+
+        movieSearchInput.addEventListener("focus", () => {
+            renderSearchResults(movieSearchInput.value);
+        });
+
+        movieSearchInput.addEventListener("keydown", (e) => {
+            if (!searchResults || searchResults.classList.contains("hidden")) {
+                if (e.key === "ArrowDown" || e.key === "Enter") {
+                    renderSearchResults(movieSearchInput.value);
+                }
+                return;
+            }
+
+            const items = searchResults.querySelectorAll(".movie-search-item");
+            if (!items.length) return;
+
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                currentFocusIndex = (currentFocusIndex + 1) % items.length;
+                updateHighlight(items);
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                currentFocusIndex = (currentFocusIndex - 1 + items.length) % items.length;
+                updateHighlight(items);
+            } else if (e.key === "Enter") {
+                e.preventDefault();
+                if (currentFocusIndex >= 0 && items[currentFocusIndex]) {
+                    const id = Number(items[currentFocusIndex].dataset.id);
+                    const movie = cachedMovies.find(m => m.id === id);
+                    if (movie) selectMovie(movie);
+                }
+            } else if (e.key === "Escape") {
+                closeDropdown();
+            }
+        });
     }
 
-    for (const movie of cachedMovies) {
-        const opt = document.createElement("option");
-        opt.value = movie.id;
-        opt.textContent = `${movie.title} [${movie.status || "Без статуса"}]`;
-        movieSelect.appendChild(opt);
+    // Кнопка очистки поиска
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener("click", () => {
+            selectMovie(null);
+            if (movieSearchInput) movieSearchInput.focus();
+        });
     }
+
+    // Закрытие выпадающего списка при клике вне его области
+    document.addEventListener("click", (e) => {
+        if (!e.target.closest(".movie-search-wrapper")) {
+            closeDropdown();
+        }
+    });
 
     // Предвыбор: сначала проверяем URL (?id=…), затем последний фильм из колеса (localStorage)
     const urlParams = new URLSearchParams(window.location.search);
@@ -155,78 +349,36 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     if (lastId) {
         const found = cachedMovies.find(m => m.id === lastId);
-        if (found) movieSelect.value = found.id;
+        if (found) {
+            selectMovie(found);
+            return;
+        }
     }
 
-    const initialMovie = getCurrentMovie();
-    updateMovieCard(initialMovie);
-    syncRatingInputWithMovie(initialMovie);
+    // Если предвыбора нет — показываем пустую карточку
+    updateMovieCard(null);
 });
-
-// ── Обновление карточки фильма при смене выбора ──────────────────────────────
-movieSelect.addEventListener("change", () => {
-    const movie = getCurrentMovie();
-    updateMovieCard(movie);
-    syncRatingInputWithMovie(movie);
-});
-
-function syncRatingInputWithMovie(movie) {
-    if (!ratingInput) return;
-    if (multiRatingInput) multiRatingInput.value = "";
-    if (multiRatingCalcInfo) multiRatingCalcInfo.classList.add("hidden");
-
-    if (movie && movie.ratings != null) {
-        ratingInput.value = movie.ratings;
-        updateRatingUI(movie.ratings);
-    } else {
-        ratingInput.value = "";
-        updateRatingUI(null);
-    }
-}
-
-function getCurrentMovie() {
-    const id = Number(movieSelect.value);
-    return cachedMovies.find(m => m.id === id) || null;
-}
-
-function updateMovieCard(movie) {
-    if (!movieTitleEl) return;
-
-    if (!movie) {
-        movieTitleEl.innerHTML = `<span class="muted">Выберите фильм из списка</span>`;
-        return;
-    }
-
-    const bgColor = STATUS_COLORS[movie.status] || "rgba(148,163,184,0.14)";
-    const ratingDisplay = movie.ratings != null 
-        ? (typeof formatRatingBadge === "function" ? formatRatingBadge(movie.ratings) : `⭐ ${movie.ratings}`)
-        : `<span class="muted">Не оценён</span>`;
-
-    movieTitleEl.innerHTML = `
-        <div class="movie-card-preview" style="background:${bgColor}">
-            <div class="movie-card-preview-header">
-                <strong class="movie-card-preview-title">${escapeHtml(movie.title)}</strong>
-                <span class="movie-card-preview-rating">${ratingDisplay}</span>
-            </div>
-            ${movie.genre ? `<p class="movie-card-preview-meta">🎬 ${escapeHtml(movie.genre)}</p>` : ""}
-            ${movie.status ? `<p class="movie-card-preview-meta">📌 ${escapeHtml(movie.status)}</p>` : ""}
-            ${movie.comment ? `<p class="movie-card-preview-comment">${escapeHtml(movie.comment)}</p>` : ""}
-        </div>
-    `;
-}
 
 // ── Сохранение оценки ────────────────────────────────────────────────────────
 saveRatingBtn.addEventListener("click", async () => {
-    const movie = getCurrentMovie();
+    if (typeof ensureAuthenticated === "function" && !isAuthenticated()) {
+        const authOk = await ensureAuthenticated("Для сохранения оценки фильма");
+        if (!authOk) return;
+    }
+
+    const movieId = Number(movieIdInput ? movieIdInput.value : "");
+    const movie = selectedMovie || cachedMovies.find(m => m.id === movieId);
+
+    if (!movie) {
+        alert("Пожалуйста, найдите и выберите фильм из списка");
+        if (movieSearchInput) movieSearchInput.focus();
+        return;
+    }
+
     const rawRating = ratingInput ? ratingInput.value.trim() : "";
     const parsed = typeof parseRatingInput === "function"
         ? parseRatingInput(rawRating)
         : { valid: rawRating !== "" && !isNaN(Number(rawRating)), finalRating: Number(rawRating) };
-
-    if (!movie) {
-        alert("Выберите фильм");
-        return;
-    }
 
     if (!parsed.valid || parsed.finalRating === null) {
         alert(parsed.error || "Оценка должна быть от -1 до 11 (или несколько через запятую)");
@@ -264,7 +416,7 @@ saveRatingBtn.addEventListener("click", async () => {
             return;
         }
 
-        // Обновляем кэш и карточку сразу, не ждём перехода
+        // Обновляем кэш и карточку сразу
         const idx = cachedMovies.findIndex(m => m.id === movie.id);
         if (idx !== -1) {
             cachedMovies[idx] = { ...movie, status: "Просмотрено", ratings: rating };
@@ -291,4 +443,4 @@ function escapeHtml(s) {
     }[c]));
 }
 
-} // конец if (movieSelect && saveRatingBtn)
+} // конец if (movieSearchInput && saveRatingBtn)

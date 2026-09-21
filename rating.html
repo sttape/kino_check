@@ -37,10 +37,18 @@
                 Сначала выберите фильм на странице колеса.
             </div>
             <form id="ratingForm" class="movie-form">
-                <label>
-                    <span>Выбор фильма</span>
-                    <select id="ratingMovieSelect"></select>
-                </label>
+                <div class="movie-search-wrapper">
+                    <label for="ratingMovieSearchInput">
+                        <span>Поиск фильма по названию</span>
+                    </label>
+                    <div class="search-input-box">
+                        <span class="search-input-icon">🔍</span>
+                        <input type="text" id="ratingMovieSearchInput" placeholder="Начните вводить название фильма..." autocomplete="off">
+                        <button type="button" id="clearMovieSearchBtn" class="clear-search-btn hidden" title="Очистить" aria-label="Очистить поиск">✕</button>
+                    </div>
+                    <input type="hidden" id="ratingMovieId">
+                    <div id="movieSearchResults" class="movie-search-results hidden" role="listbox"></div>
+                </div>
                 <div id="ratingMovieTitle" class="selected-movie"></div>
 
                 <!-- Быстрый выбор оценки -->

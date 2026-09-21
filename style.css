@@ -256,7 +256,7 @@ h2 {
     display: grid;
     grid-template-columns: 280px 1fr 300px;
     gap: 28px;
-    align-items: center;
+    align-items: start;
 }
 
 /* ── Стили на всю ширину экрана для колеса ───────────────────────────── */
@@ -309,7 +309,7 @@ body[data-page="wheel"] .wheel-panel {
 body[data-page="wheel"] .wheel-panel-inner {
     grid-template-columns: 320px 1fr 340px;
     gap: 24px;
-    align-items: center;
+    align-items: start;
     width: 100%;
 }
 
@@ -321,6 +321,7 @@ body[data-page="wheel"] .wheel-stage {
     aspect-ratio: 1 / 1;
     margin: 0 auto;
     padding: 4px;
+    align-self: center;
 }
 
 body[data-page="wheel"] .wheel-movie-list {
@@ -332,8 +333,8 @@ body[data-page="wheel"] .wheel-movie-list {
     display: grid;
     gap: 14px;
     align-content: start;
+    align-self: start;
     padding: 4px 0;
-    
 }
 
 .compact-title {
@@ -344,9 +345,9 @@ body[data-page="wheel"] .wheel-movie-list {
     display: grid;
     gap: 10px;
     max-height: 640px;
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
     padding-right: 4px;
-     
 }
 
 .wheel-movie-item {
@@ -354,10 +355,26 @@ body[data-page="wheel"] .wheel-movie-list {
     grid-template-columns: auto 1fr;
     gap: 12px;
     align-items: center;
-    padding: 14px;
+    padding: 12px 14px;
     border-radius: 18px;
     border: 1px solid rgba(148, 163, 184, 0.14);
     background: rgba(2, 6, 23, 0.3);
+    min-width: 0;
+}
+
+.wheel-movie-info {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.wheel-movie-title {
+    display: block;
+    font-weight: 700;
+    color: var(--text);
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+    line-height: 1.35;
 }
 
 .wheel-index {
@@ -494,6 +511,7 @@ body[data-page="wheel"] .wheel-movie-list {
     display: grid;
     gap: 16px;
     align-content: start;
+    align-self: start;
 }
 
 .wheel-setting {
@@ -505,8 +523,27 @@ body[data-page="wheel"] .wheel-movie-list {
     background: rgba(2, 6, 23, 0.3);
 }
 
-.wheel-setting input[type="range"] {
-    padding: 0;
+.duration-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.duration-input-wrap input {
+    padding-right: 52px;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.duration-unit {
+    position: absolute;
+    right: 14px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    pointer-events: none;
+    user-select: none;
+    font-weight: 500;
 }
 
 .result-card,
@@ -551,8 +588,51 @@ table th,
 table td {
     padding: 14px 16px;
     text-align: left;
-    vertical-align: top;
+    vertical-align: middle;
     border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+table th.sortable:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--accent-2);
+}
+
+table th.sortable:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: -2px;
+}
+
+.th-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sort-icon {
+    display: inline-block;
+    font-size: 0.85rem;
+    opacity: 0.35;
+    transition: opacity 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+table th.sortable:hover .sort-icon {
+    opacity: 0.75;
+}
+
+table th.sortable.active-sort {
+    color: var(--accent-2);
+}
+
+table th.sortable.active-sort .sort-icon {
+    opacity: 1;
+    color: var(--accent-2);
+    font-weight: bold;
 }
 
 .row-actions {
@@ -660,6 +740,216 @@ table td {
     flex-wrap: wrap;
 }
 
+/* ── Стили окна авторизации ───────────────────────────────────────────── */
+.auth-dialog {
+    width: min(440px, 100%);
+}
+
+.auth-action-text {
+    font-size: 0.92rem;
+    line-height: 1.45;
+    margin: 0 0 14px;
+    color: rgba(226, 232, 240, 0.82);
+}
+
+.auth-dialog form label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: rgba(226, 232, 240, 0.9);
+}
+
+.auth-dialog input[type="text"],
+.auth-dialog input[type="email"],
+.auth-dialog input[type="password"] {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(2, 6, 23, 0.5);
+    color: var(--text);
+    outline: none;
+    font-size: 0.95rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-dialog input[type="text"]:focus,
+.auth-dialog input[type="email"]:focus,
+.auth-dialog input[type="password"]:focus {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+.password-input-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.password-input-row input {
+    padding-right: 46px;
+}
+
+.toggle-password-btn {
+    position: absolute;
+    right: 12px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1.15rem;
+    color: var(--muted);
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.toggle-password-btn:hover {
+    opacity: 0.8;
+    transform: scale(1.1);
+}
+
+.auth-error-msg {
+    color: #f87171;
+    font-size: 0.88rem;
+    background: rgba(248, 113, 113, 0.12);
+    border: 1px solid rgba(248, 113, 113, 0.25);
+    padding: 10px 14px;
+    border-radius: 12px;
+}
+
+.nav-auth-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(2, 6, 23, 0.35);
+    color: var(--text);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, color 0.15s ease;
+}
+
+.nav-auth-btn:hover {
+    background: rgba(56, 189, 248, 0.16);
+    border-color: rgba(56, 189, 248, 0.4);
+    transform: translateY(-1px);
+}
+
+.nav-auth-btn.authorized {
+    border-color: rgba(74, 222, 128, 0.4);
+    background: rgba(74, 222, 128, 0.14);
+    color: #4ade80;
+}
+
+.nav-auth-btn.authorized:hover {
+    border-color: rgba(248, 113, 113, 0.45);
+    background: rgba(248, 113, 113, 0.18);
+    color: #f87171;
+}
+
+.nav-admin-btn {
+    border-color: rgba(56, 189, 248, 0.35);
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--accent-2);
+}
+
+.nav-admin-btn:hover {
+    background: rgba(56, 189, 248, 0.24);
+    border-color: var(--accent-2);
+    color: #fff;
+}
+
+/* ── Стили модального окна пользователей ─────────────────────────────── */
+.admin-dialog {
+    width: min(680px, 100%);
+}
+
+.admin-create-user-section {
+    background: rgba(2, 6, 23, 0.45);
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    margin-bottom: 24px;
+}
+
+.admin-create-user-section .section-subtitle,
+.admin-user-list-section .section-subtitle {
+    margin: 0 0 6px;
+    font-size: 1.12rem;
+    font-weight: 700;
+}
+
+.small-text {
+    font-size: 0.86rem;
+    line-height: 1.45;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+@media (max-width: 600px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.admin-users-table-wrap {
+    overflow-x: auto;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: rgba(2, 6, 23, 0.35);
+}
+
+.admin-users-table {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.admin-users-table th,
+.admin-users-table td {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+}
+
+.user-role-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.user-role-badge.role-admin {
+    background: rgba(56, 189, 248, 0.16);
+    color: var(--accent-2);
+    border: 1px solid rgba(56, 189, 248, 0.32);
+}
+
+.user-role-badge.role-user {
+    background: rgba(148, 163, 184, 0.14);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.action-btn.compact {
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 0.8rem;
+}
+
 table th {
     background: rgba(15, 23, 42, 0.94);
     color: #cbd5e1;
@@ -704,6 +994,134 @@ table tr:last-child td {
 
 .file-input input {
     padding: 12px;
+}
+
+.movie-search-wrapper {
+    position: relative;
+    display: grid;
+    gap: 8px;
+}
+
+.search-input-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.search-input-icon {
+    position: absolute;
+    left: 14px;
+    font-size: 1rem;
+    color: var(--muted);
+    pointer-events: none;
+    user-select: none;
+}
+
+.search-input-box input {
+    padding-left: 42px;
+    padding-right: 40px;
+    min-height: 48px;
+    font-size: 0.95rem;
+}
+
+.search-input-box input:focus {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    outline: none;
+}
+
+.clear-search-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(148, 163, 184, 0.2);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.clear-search-btn:hover {
+    background: rgba(248, 113, 113, 0.4);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.movie-search-results {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    max-height: 280px;
+    overflow-y: auto;
+    background: rgba(10, 15, 30, 0.98);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 16px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    padding: 6px;
+    display: grid;
+    gap: 4px;
+}
+
+.movie-search-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.movie-search-item:hover,
+.movie-search-item.focused {
+    background: rgba(56, 189, 248, 0.12);
+    border-color: rgba(56, 189, 248, 0.25);
+}
+
+.movie-search-item-info {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.movie-search-item-title {
+    font-weight: 700;
+    font-size: 0.94rem;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.movie-search-item-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.movie-search-item-badge {
+    flex-shrink: 0;
+}
+
+.movie-search-empty {
+    padding: 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
 }
 
 .selected-movie {
@@ -962,9 +1380,26 @@ body[data-page="movies"] .comment-cell {
 }
 
 body[data-page="movies"] .action-btn {
-    min-height: 32px;
-    padding: 0 12px;
-    font-size: 0.82rem;
+    min-height: 34px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    line-height: 1;
+    border-radius: 10px;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+body[data-page="movies"] .action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+body[data-page="movies"] .action-btn:active {
+    transform: translateY(1px);
 }
 
 /* ── Статусы и оценки ─────────────────────────────────────────────────── */
@@ -1556,9 +1991,10 @@ body[data-page="movies"] .action-btn {
 
     body[data-page="movies"] .action-btn {
         min-height: 32px;
-        padding: 0 10px;
-        font-size: 0.78rem;
-        white-space: nowrap;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        font-size: 0.95rem;
     }
 
     .pagination-bar {

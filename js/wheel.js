@@ -45,14 +45,33 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (!wheelCanvas || !ctx) return;
 
     try {
-        if (wheelDurationInput && wheelDurationValue) {
+        if (wheelDurationInput) {
             const savedDuration = loadWheelDuration();
             wheelDurationInput.value = savedDuration;
-            wheelDurationValue.textContent = savedDuration + " сек";
+            if (wheelDurationValue) {
+                wheelDurationValue.textContent = savedDuration + " сек";
+            }
 
-            wheelDurationInput.addEventListener("input", () => {
-                wheelDurationValue.textContent = wheelDurationInput.value + " сек";
-                saveWheelDuration(Number(wheelDurationInput.value));
+            const syncDuration = () => {
+                let val = Math.round(Number(wheelDurationInput.value));
+                if (isNaN(val) || val < 1) val = 1;
+                if (val > 60) val = 60;
+                saveWheelDuration(val);
+                if (wheelDurationValue) {
+                    wheelDurationValue.textContent = val + " сек";
+                }
+            };
+
+            wheelDurationInput.addEventListener("input", syncDuration);
+            wheelDurationInput.addEventListener("change", () => {
+                let val = Math.round(Number(wheelDurationInput.value));
+                if (isNaN(val) || val < 1) val = 1;
+                if (val > 60) val = 60;
+                wheelDurationInput.value = val;
+                saveWheelDuration(val);
+                if (wheelDurationValue) {
+                    wheelDurationValue.textContent = val + " сек";
+                }
             });
         }
 
@@ -71,16 +90,98 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 // ---------------------- ЦЕНТР КОЛЕСА (GIF / ИЗОБРАЖЕНИЕ) ----------------------
 
-function initHubImage() {
-    const ALLOWED_IMAGE_TYPES = ["image/gif", "image/png", "image/jpeg", "image/webp"];
-    const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024; // 3 MB
+const IDB_NAME = "KinoCheckWheelDB";
+const IDB_STORE = "settings";
+const IDB_KEY_HUB = "wheel_hub_image";
+
+function openWheelDB() {
+    return new Promise((resolve) => {
+        if (!window.indexedDB) {
+            resolve(null);
+            return;
+        }
+        try {
+            const req = indexedDB.open(IDB_NAME, 1);
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(IDB_STORE)) {
+                    db.createObjectStore(IDB_STORE);
+                }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve(null);
+        } catch (err) {
+            resolve(null);
+        }
+    });
+}
+
+async function saveHubImagePersistent(dataUrl) {
+    try {
+        const db = await openWheelDB();
+        if (db) {
+            const tx = db.transaction(IDB_STORE, "readwrite");
+            tx.objectStore(IDB_STORE).put(dataUrl, IDB_KEY_HUB);
+        }
+    } catch (e) {
+        console.warn("Не удалось сохранить изображение в IndexedDB:", e);
+    }
+
+    try {
+        localStorage.setItem(STORAGE_KEY_HUB_IMAGE, dataUrl);
+    } catch (e) {
+        // Если размер превышает квоту localStorage, IndexedDB сохранит данные
+    }
+}
+
+async function loadHubImagePersistent() {
+    try {
+        const db = await openWheelDB();
+        if (db) {
+            const tx = db.transaction(IDB_STORE, "readonly");
+            const req = tx.objectStore(IDB_STORE).get(IDB_KEY_HUB);
+            const val = await new Promise((res) => {
+                req.onsuccess = () => res(req.result);
+                req.onerror = () => res(null);
+            });
+            if (val && typeof val === "string" && val.startsWith("data:image/") && !val.startsWith("data:image/svg+xml")) {
+                return val;
+            }
+        }
+    } catch (e) {}
 
     try {
         const saved = localStorage.getItem(STORAGE_KEY_HUB_IMAGE);
         if (saved && typeof saved === "string" && saved.startsWith("data:image/") && !saved.startsWith("data:image/svg+xml")) {
-            setHubImage(saved);
+            return saved;
         }
     } catch (e) {}
+
+    return null;
+}
+
+async function clearHubImagePersistent() {
+    try {
+        const db = await openWheelDB();
+        if (db) {
+            const tx = db.transaction(IDB_STORE, "readwrite");
+            tx.objectStore(IDB_STORE).delete(IDB_KEY_HUB);
+        }
+    } catch (e) {}
+
+    try {
+        localStorage.removeItem(STORAGE_KEY_HUB_IMAGE);
+    } catch (e) {}
+}
+
+async function initHubImage() {
+    const ALLOWED_IMAGE_TYPES = ["image/gif", "image/png", "image/jpeg", "image/webp"];
+    const MAX_IMAGE_SIZE_BYTES = 30 * 1024 * 1024; // 30 MB
+
+    const saved = await loadHubImagePersistent();
+    if (saved) {
+        setHubImage(saved);
+    }
 
     if (hubImageInput) {
         hubImageInput.addEventListener("change", (e) => {
@@ -94,25 +195,21 @@ function initHubImage() {
                 return;
             }
 
-            // Ограничение на размер файла (защита от переполнения памяти)
+            // Ограничение на размер файла до 30 МБ
             if (file.size > MAX_IMAGE_SIZE_BYTES) {
-                alert("Размер файла не должен превышать 3 МБ.");
+                alert("Размер файла не должен превышать 30 МБ.");
                 e.target.value = "";
                 return;
             }
 
             const reader = new FileReader();
-            reader.onload = (ev) => {
+            reader.onload = async (ev) => {
                 const dataUrl = ev.target.result;
                 if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/")) {
                     alert("Ошибка при чтении изображения.");
                     return;
                 }
-                try {
-                    localStorage.setItem(STORAGE_KEY_HUB_IMAGE, dataUrl);
-                } catch (err) {
-                    console.warn("Изображение слишком большое для сохранения в localStorage, отображается в текущей сессии.");
-                }
+                await saveHubImagePersistent(dataUrl);
                 setHubImage(dataUrl);
             };
             reader.readAsDataURL(file);
@@ -120,8 +217,8 @@ function initHubImage() {
     }
 
     if (resetHubImageBtn) {
-        resetHubImageBtn.addEventListener("click", () => {
-            clearHubImage();
+        resetHubImageBtn.addEventListener("click", async () => {
+            await clearHubImage();
         });
     }
 }
@@ -138,10 +235,8 @@ function setHubImage(dataUrl) {
     }
 }
 
-function clearHubImage() {
-    try {
-        localStorage.removeItem(STORAGE_KEY_HUB_IMAGE);
-    } catch (e) {}
+async function clearHubImage() {
+    await clearHubImagePersistent();
 
     if (wheelCenterImg && wheelCenterText) {
         wheelCenterImg.src = "";
@@ -212,9 +307,8 @@ function renderWheelList() {
         div.className = "wheel-movie-item";
         div.innerHTML = `
             <div class="wheel-index">${index + 1}</div>
-            <div>
-                <strong>${escapeHtml(movie.title)}</strong>
-                <p class="muted">${escapeHtml(movie.genre || movie.status || "")}</p>
+            <div class="wheel-movie-info">
+                <strong class="wheel-movie-title">${escapeHtml(movie.title)}</strong>
             </div>
         `;
         wheelMovieList.appendChild(div);
@@ -387,7 +481,7 @@ function spinWheel() {
     const startAngle = currentRotation;
     const targetRotation = currentRotation + turns * 2 * Math.PI + delta;
 
-    const duration = Math.max(2000, (loadWheelDuration ? loadWheelDuration() : 5) * 1000);
+    const duration = Math.max(1000, (loadWheelDuration ? loadWheelDuration() : 5) * 1000);
     const startTime = performance.now();
 
     function animate(currentTime) {
