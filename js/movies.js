@@ -159,6 +159,8 @@ function renderMovies(movies) {
 
     for (const movie of movies) {
         const tr = document.createElement("tr");
+        tr.className = "movie-table-row";
+        tr.dataset.id = String(movie.id);
 
         const statusClass = getStatusClass(movie.status);
         const statusHtml = movie.status
@@ -170,12 +172,12 @@ function renderMovies(movies) {
             : (movie.ratings != null ? `<span class="rating-badge">${movie.ratings}</span>` : `<span class="muted">-</span>`);
 
         tr.innerHTML = `
-            <td><strong style="color: var(--text); font-size: 0.94rem;">${escapeHtml(movie.title)}</strong></td>
-            <td>${escapeHtml(movie.genre || "-")}</td>
-            <td class="comment-cell" title="${escapeHtml(movie.comment || "")}">${escapeHtml(movie.comment || "-")}</td>
-            <td>${statusHtml}</td>
-            <td>${ratingHtml}</td>
-            <td>
+            <td class="col-title"><strong class="movie-title-text" style="color: var(--text); font-size: 0.94rem;">${escapeHtml(movie.title)}</strong></td>
+            <td class="col-genre">${escapeHtml(movie.genre || "-")}</td>
+            <td class="col-comment comment-cell" title="${escapeHtml(movie.comment || "")}">${escapeHtml(movie.comment || "-")}</td>
+            <td class="col-status">${statusHtml}</td>
+            <td class="col-rating">${ratingHtml}</td>
+            <td class="col-actions">
                 <div class="row-actions">
                     <button type="button" class="action-btn action-btn-edit" data-action="edit" data-id="${Number(movie.id)}" title="Редактировать" aria-label="Редактировать">✏️</button>
                     <button type="button" class="action-btn action-btn-delete" data-action="delete" data-id="${Number(movie.id)}" title="Удалить" aria-label="Удалить">🗑️</button>
@@ -461,20 +463,46 @@ window.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Делегирование кликов по кнопкам таблицы (Редактировать / Удалить)
+    // Делегирование кликов по таблице фильмов (кнопки или тап по строке)
     if (moviesTableBody) {
         moviesTableBody.addEventListener("click", (e) => {
             const btn = e.target.closest("button[data-action]");
-            if (!btn) return;
-            const action = btn.dataset.action;
-            const id = Number(btn.dataset.id);
+            if (btn) {
+                const action = btn.dataset.action;
+                const id = Number(btn.dataset.id);
+                if (!id || isNaN(id) || id <= 0) return;
+
+                if (action === "edit") {
+                    editMovie(id);
+                } else if (action === "delete") {
+                    deleteMovieConfirm(id);
+                }
+                return;
+            }
+
+            // Тап / клик по строке tr (для удобства на мобильных)
+            const row = e.target.closest("tr.movie-table-row");
+            if (row && row.dataset.id) {
+                const id = Number(row.dataset.id);
+                if (id && !isNaN(id) && id > 0) {
+                    editMovie(id);
+                }
+            }
+        });
+    }
+
+    // Удаление фильма из модального окна редактирования
+    const modalDeleteBtn = document.getElementById("movieModalDeleteBtn");
+    if (modalDeleteBtn) {
+        modalDeleteBtn.addEventListener("click", async () => {
+            const id = Number(document.getElementById("movieEditId").value);
             if (!id || isNaN(id) || id <= 0) return;
 
-            if (action === "edit") {
-                editMovie(id);
-            } else if (action === "delete") {
-                deleteMovieConfirm(id);
+            if (editModal) {
+                editModal.classList.add("hidden");
+                editModal.setAttribute("aria-hidden", "true");
             }
+            await deleteMovieConfirm(id);
         });
     }
 

@@ -37,7 +37,88 @@ const resetHubImageBtn = document.getElementById("resetHubImageBtn");
 const wheelCenterImg = document.getElementById("wheelCenterImg");
 const wheelCenterText = document.getElementById("wheelCenterText");
 
+const openWheelSettingsBtn = document.getElementById("openWheelSettingsBtn");
+const wheelSettingsModal = document.getElementById("wheelSettingsModal");
+const wheelSettingsContainer = document.getElementById("wheelSettingsContainer");
+const wheelSettingsModalBody = document.getElementById("wheelSettingsModalBody");
+const desktopSettingsSlot = document.getElementById("desktopSettingsSlot");
+
+const mobileDrumStage = document.getElementById("mobileDrumStage");
+const drumWindow = document.getElementById("drumWindow");
+const drumTrack = document.getElementById("drumTrack");
+const drumHousing = document.getElementById("drumHousing");
+let currentDrumTranslateX = 0;
+
 const STORAGE_KEY_HUB_IMAGE = "wheel_hub_image";
+
+// ---------------------- МОДАЛЬНОЕ ОКНО НАСТРОЕК ----------------------
+
+function syncSettingsLocation() {
+    const isMobile = window.innerWidth <= 920;
+    if (isMobile) {
+        if (wheelSettingsContainer && wheelSettingsModalBody && !wheelSettingsModalBody.contains(wheelSettingsContainer)) {
+            wheelSettingsModalBody.appendChild(wheelSettingsContainer);
+        }
+    } else {
+        if (wheelSettingsContainer && desktopSettingsSlot && !desktopSettingsSlot.contains(wheelSettingsContainer)) {
+            desktopSettingsSlot.appendChild(wheelSettingsContainer);
+        }
+        if (wheelSettingsModal && !wheelSettingsModal.classList.contains("hidden")) {
+            closeWheelSettings();
+        }
+    }
+}
+
+function openWheelSettings() {
+    if (wheelSettingsContainer && wheelSettingsModalBody && !wheelSettingsModalBody.contains(wheelSettingsContainer)) {
+        wheelSettingsModalBody.appendChild(wheelSettingsContainer);
+    }
+    if (wheelSettingsModal) {
+        wheelSettingsModal.classList.remove("hidden");
+        wheelSettingsModal.setAttribute("aria-hidden", "false");
+    }
+}
+
+function closeWheelSettings() {
+    if (wheelSettingsModal) {
+        wheelSettingsModal.classList.add("hidden");
+        wheelSettingsModal.setAttribute("aria-hidden", "true");
+    }
+    if (window.innerWidth > 920 && desktopSettingsSlot && wheelSettingsContainer) {
+        if (!desktopSettingsSlot.contains(wheelSettingsContainer)) {
+            desktopSettingsSlot.appendChild(wheelSettingsContainer);
+        }
+    }
+}
+
+function initWheelSettingsModal() {
+    if (openWheelSettingsBtn) {
+        openWheelSettingsBtn.addEventListener("click", openWheelSettings);
+    }
+
+    if (wheelSettingsModal) {
+        const closeButtons = wheelSettingsModal.querySelectorAll("[data-wheel-modal-close]");
+        closeButtons.forEach(btn => btn.addEventListener("click", closeWheelSettings));
+    }
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && wheelSettingsModal && !wheelSettingsModal.classList.contains("hidden")) {
+            closeWheelSettings();
+        }
+    });
+
+    window.addEventListener("resize", () => {
+        syncSettingsLocation();
+        if (!spinning && drumTrack && drumWindow && wheelMovies.length) {
+            const cardWidth = window.innerWidth <= 480 ? 140 : 150;
+            const windowW = drumWindow.clientWidth || 280;
+            const initialOffset = (windowW / 2) - (cardWidth / 2);
+            currentDrumTranslateX = initialOffset;
+            drumTrack.style.transform = `translate3d(${initialOffset}px, 0, 0)`;
+        }
+    });
+    syncSettingsLocation();
+}
 
 // ---------------------- ИНИЦИАЛИЗАЦИЯ ----------------------
 
@@ -45,6 +126,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (!wheelCanvas || !ctx) return;
 
     try {
+        initWheelSettingsModal();
+
         if (wheelDurationInput) {
             const savedDuration = loadWheelDuration();
             wheelDurationInput.value = savedDuration;
@@ -274,6 +357,7 @@ function applyFilterAndRender() {
     updateHint();
     renderWheelList();
     drawWheel();
+    renderDrum();
 }
 
 function updateHint() {
@@ -347,19 +431,20 @@ function drawWheel() {
     const angleStep = (2 * Math.PI) / count;
 
     // Подбираем крупный читаемый шрифт с учётом разрешения холста 1200px
+    const isSmallScreen = window.innerWidth <= 768;
     let fontSize, maxChars;
     if (count <= 10) {
-        fontSize = 40;
-        maxChars = 28;
+        fontSize = isSmallScreen ? 44 : 40;
+        maxChars = isSmallScreen ? 22 : 28;
     } else if (count <= 20) {
-        fontSize = 32;
-        maxChars = 26;
+        fontSize = isSmallScreen ? 34 : 32;
+        maxChars = isSmallScreen ? 20 : 26;
     } else if (count <= 38) {
-        fontSize = 26;
-        maxChars = 24;
+        fontSize = isSmallScreen ? 28 : 26;
+        maxChars = isSmallScreen ? 18 : 24;
     } else if (count <= 55) {
-        fontSize = 22;
-        maxChars = 20;
+        fontSize = isSmallScreen ? 24 : 22;
+        maxChars = isSmallScreen ? 16 : 20;
     } else if (count <= 80) {
         fontSize = 18;
         maxChars = 17;
@@ -399,8 +484,8 @@ function drawWheel() {
         }
 
         // Тёмная обводка для максимальной контрастности и читаемости
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = "rgba(0, 0, 0, 0.75)";
+        ctx.lineWidth = isSmallScreen ? 6 : 4;
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.85)";
         ctx.strokeText(title, radius - 24, 0);
 
         ctx.fillStyle = "#ffffff";
@@ -447,6 +532,51 @@ if (wheelCanvas) {
     });
 }
 
+if (drumHousing) {
+    drumHousing.style.cursor = "pointer";
+    drumHousing.addEventListener("click", () => {
+        if (spinning) return;
+        if (!wheelMovies.length) return;
+        spinWheel();
+    });
+}
+
+// ---------------------- ОТРИСОВКА МОБИЛЬНОГО БАРАБАНА ----------------------
+
+function renderDrum() {
+    if (!drumTrack || !drumWindow) return;
+    if (!wheelMovies.length) {
+        drumTrack.innerHTML = `<div class="drum-empty-state"><span class="muted">Фильмов нет для барабана</span></div>`;
+        drumTrack.style.transform = "none";
+        currentDrumTranslateX = 0;
+        return;
+    }
+
+    const cardWidth = window.innerWidth <= 480 ? 140 : 150;
+    const minItems = 30;
+    const items = [];
+    while (items.length < minItems) {
+        items.push(...wheelMovies);
+    }
+    const displayItems = items.slice(0, Math.max(minItems, wheelMovies.length * 2));
+
+    drumTrack.innerHTML = displayItems.map((movie, idx) => {
+        const color = palette[idx % palette.length];
+        return `
+            <div class="drum-card" data-id="${movie.id}" style="--card-accent: ${color};">
+                <span class="drum-card-num" style="background:${color}">#${(idx % wheelMovies.length) + 1}</span>
+                <strong class="drum-card-title">${escapeHtml(movie.title)}</strong>
+                <span class="drum-card-genre">${escapeHtml(movie.genre || "Без жанра")}</span>
+            </div>
+        `;
+    }).join("");
+
+    const windowW = drumWindow.clientWidth || 280;
+    const initialOffset = (windowW / 2) - (cardWidth / 2);
+    currentDrumTranslateX = initialOffset;
+    drumTrack.style.transform = `translate3d(${initialOffset}px, 0, 0)`;
+}
+
 function spinWheel() {
     spinning = true;
     spinBtn.disabled = true;
@@ -484,6 +614,58 @@ function spinWheel() {
     const duration = Math.max(1000, (loadWheelDuration ? loadWheelDuration() : 5) * 1000);
     const startTime = performance.now();
 
+    // Подготовка данных для анимации мобильного барабана
+    const cardWidth = window.innerWidth <= 480 ? 140 : 150;
+    const gap = 8;
+    const pitch = cardWidth + gap;
+    let drumStartTranslateX = 0;
+    let drumTargetTranslateX = 0;
+
+    if (drumTrack && drumWindow) {
+        const windowW = drumWindow.clientWidth || 280;
+        const initialOffset = (windowW / 2) - (cardWidth / 2);
+
+        // Всегда возвращаем барабан в начальное состояние при нажатии крутить
+        drumStartTranslateX = initialOffset;
+        currentDrumTranslateX = initialOffset;
+        drumTrack.style.transform = `translate3d(${initialOffset}px, 0, 0)`;
+
+        // Формируем цепочку карточек для барабана с победителем в конце
+        const spinCount = Math.max(30, Math.round((duration / 1000) * 8)) + Math.floor(Math.random() * 4);
+        const targetCardIndex = spinCount - 5; // победитель на 5 карточек раньше конца для реалистичного докатывания
+
+        const drumSequence = [];
+        for (let i = 0; i < spinCount; i++) {
+            if (i === targetCardIndex) {
+                drumSequence.push(selectedMovie);
+            } else {
+                const randomPick = wheelMovies[Math.floor(Math.random() * count)];
+                drumSequence.push(randomPick);
+            }
+        }
+
+        drumTrack.innerHTML = drumSequence.map((m, idx) => {
+            const color = palette[idx % palette.length];
+            const isWinner = idx === targetCardIndex;
+            const originalIdx = wheelMovies.findIndex(x => x.id === m.id);
+            const num = originalIdx >= 0 ? originalIdx + 1 : (idx % count) + 1;
+            return `
+                <div class="drum-card ${isWinner ? 'drum-card-target' : ''}" data-id="${m.id}" style="--card-accent: ${color};">
+                    <span class="drum-card-num" style="background:${color}">#${num}</span>
+                    <strong class="drum-card-title">${escapeHtml(m.title)}</strong>
+                    <span class="drum-card-genre">${escapeHtml(m.genre || "Без жанра")}</span>
+                </div>
+            `;
+        }).join("");
+
+        const cardCenter = targetCardIndex * pitch + (cardWidth / 2);
+        const drumJitter = (Math.random() - 0.5) * 20;
+        const targetX = cardCenter + drumJitter;
+
+        drumTargetTranslateX = (windowW / 2) - targetX;
+        drumTrack.style.transform = `translate3d(${initialOffset}px, 0, 0)`;
+    }
+
     function animate(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
@@ -494,11 +676,25 @@ function spinWheel() {
 
         drawWheel();
 
+        if (drumTrack) {
+            const drumCurrentX = drumStartTranslateX + (drumTargetTranslateX - drumStartTranslateX) * eased;
+            drumTrack.style.transform = `translate3d(${drumCurrentX}px, 0, 0)`;
+            currentDrumTranslateX = drumCurrentX;
+        }
+
         if (progress < 1) {
             requestAnimationFrame(animate);
         } else {
             currentRotation = targetRotation;
             drawWheel();
+
+            if (drumTrack) {
+                drumTrack.style.transform = `translate3d(${drumTargetTranslateX}px, 0, 0)`;
+                currentDrumTranslateX = drumTargetTranslateX;
+                const winnerCard = drumTrack.querySelector(".drum-card-target");
+                if (winnerCard) winnerCard.classList.add("winner-highlight");
+            }
+
             finishSpin(selectedMovie);
         }
     }
@@ -548,6 +744,7 @@ if (modeNormalBtn) {
         if (wheelResult) wheelResult.textContent = "";
         if (startWatchBtn) startWatchBtn.classList.add("hidden");
         updateHint();
+        renderDrum();
     });
 }
 
@@ -560,6 +757,7 @@ if (modeEliminationBtn) {
         if (wheelResult) wheelResult.textContent = "";
         if (startWatchBtn) startWatchBtn.classList.add("hidden");
         updateHint();
+        renderDrum();
     });
 }
 
@@ -579,6 +777,7 @@ function eliminateMovie(id) {
     wheelMovies = wheelMovies.filter(m => m.id !== id);
     renderWheelList();
     drawWheel();
+    renderDrum();
 
     if (resetWheelBtn) resetWheelBtn.classList.remove("hidden");
 

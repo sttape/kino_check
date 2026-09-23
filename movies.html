@@ -50,20 +50,20 @@
                 <table id="moviesTable">
                     <thead>
                         <tr>
-                            <th class="sortable" data-sort-key="title" role="button" tabindex="0" title="Сортировать по названию">
+                            <th class="sortable col-title" data-sort-key="title" role="button" tabindex="0" title="Сортировать по названию">
                                 <span class="th-content">Название <span class="sort-icon" aria-hidden="true">↕</span></span>
                             </th>
-                            <th class="sortable" data-sort-key="genre" role="button" tabindex="0" title="Сортировать по жанру">
+                            <th class="sortable col-genre" data-sort-key="genre" role="button" tabindex="0" title="Сортировать по жанру">
                                 <span class="th-content">Жанр <span class="sort-icon" aria-hidden="true">↕</span></span>
                             </th>
-                            <th>Комментарий</th>
-                            <th class="sortable" data-sort-key="status" role="button" tabindex="0" title="Сортировать по статусу">
+                            <th class="col-comment">Комментарий</th>
+                            <th class="sortable col-status" data-sort-key="status" role="button" tabindex="0" title="Сортировать по статусу">
                                 <span class="th-content">Статус <span class="sort-icon" aria-hidden="true">↕</span></span>
                             </th>
-                            <th class="sortable" data-sort-key="ratings" role="button" tabindex="0" title="Сортировать по оценке">
+                            <th class="sortable col-rating" data-sort-key="ratings" role="button" tabindex="0" title="Сортировать по оценке">
                                 <span class="th-content">Оценка <span class="sort-icon" aria-hidden="true">↕</span></span>
                             </th>
-                            <th>Действия</th>
+                            <th class="col-actions">Действия</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -144,6 +144,7 @@
                         </div>
                     </label>
                     <div class="modal-actions">
+                        <button type="button" id="movieModalDeleteBtn" class="danger-button">Удалить фильм</button>
                         <button type="button" class="secondary-button" data-modal-close>Отмена</button>
                         <button type="submit" class="primary-button">Сохранить изменения</button>
                     </div>

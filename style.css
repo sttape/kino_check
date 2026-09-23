@@ -501,10 +501,187 @@ body[data-page="wheel"] .wheel-movie-list {
     transform: translateY(-1px);
 }
 
-.secondary-button.compact {
-    min-height: 40px;
-    padding: 0 14px;
-    font-size: 0.85rem;
+/* ── Мобильный барабан-рулетка со слотами (скрыт на десктопе) ── */
+.mobile-drum-stage {
+    display: none;
+}
+
+.drum-housing {
+    position: relative;
+    width: min(100%, 280px);
+    max-width: 280px;
+    height: 120px;
+    margin: 0 auto;
+    border-radius: 20px;
+    background: radial-gradient(ellipse at center, #0e162e 0%, #050816 100%);
+    border: 2px solid rgba(249, 115, 22, 0.5);
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, 0.6),
+        0 0 20px rgba(249, 115, 22, 0.25),
+        inset 0 2px 10px rgba(255, 255, 255, 0.08),
+        inset 0 -2px 10px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+    user-select: none;
+    touch-action: pan-y;
+}
+
+.drum-pointer-top {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-top: 13px solid #f97316;
+    z-index: 20;
+    filter: drop-shadow(0 2px 6px #f97316);
+    pointer-events: none;
+    font-size: 0;
+    line-height: 0;
+}
+
+.drum-pointer-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-bottom: 13px solid #f97316;
+    z-index: 20;
+    filter: drop-shadow(0 -2px 6px #f97316);
+    pointer-events: none;
+    font-size: 0;
+    line-height: 0;
+}
+
+.drum-pointer-line {
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: linear-gradient(to bottom, #f97316, rgba(249, 115, 22, 0.25) 50%, #f97316);
+    box-shadow: 0 0 6px #f97316;
+    z-index: 15;
+    pointer-events: none;
+}
+
+.drum-vignette-left {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 55px;
+    background: linear-gradient(to right, rgba(5, 8, 22, 0.98) 0%, rgba(5, 8, 22, 0.6) 50%, transparent 100%);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.drum-vignette-right {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 55px;
+    background: linear-gradient(to left, rgba(5, 8, 22, 0.98) 0%, rgba(5, 8, 22, 0.6) 50%, transparent 100%);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.drum-window {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+.drum-track {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+    padding: 0 8px;
+}
+
+.drum-card {
+    flex: 0 0 150px;
+    width: 150px;
+    height: 96px;
+    background: rgba(15, 23, 42, 0.9);
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-top: 3px solid var(--card-accent, #f97316);
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+}
+
+.drum-card-num {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 6px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.drum-card-title {
+    color: var(--text);
+    font-size: 0.86rem;
+    font-weight: 700;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-top: 14px;
+    word-break: break-word;
+}
+
+.drum-card-genre {
+    color: var(--muted);
+    font-size: 0.72rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: auto;
+}
+
+.drum-card.winner-highlight {
+    border-color: #f97316;
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.6), inset 0 0 12px rgba(249, 115, 22, 0.3);
+    transform: scale(1.04);
+}
+
+.drum-tap-hint {
+    text-align: center;
+    font-size: 0.78rem;
+    margin: 6px 0 0;
+}
+
+.drum-empty-state {
+    padding: 20px;
+    text-align: center;
+    width: 100%;
 }
 
 .wheel-sidebar {
@@ -512,6 +689,92 @@ body[data-page="wheel"] .wheel-movie-list {
     gap: 16px;
     align-content: start;
     align-self: start;
+}
+
+.wheel-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.wheel-sidebar-header h2 {
+    margin: 0;
+}
+
+.wheel-settings-toggle-btn {
+    display: none; /* скрыта на широких десктопах, открыта на мобильных */
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    min-height: 38px;
+    border-radius: 999px;
+    border: 1px solid rgba(249, 115, 22, 0.45);
+    background: rgba(249, 115, 22, 0.14);
+    color: var(--text);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.15);
+    transition: all 0.15s ease;
+}
+
+.wheel-settings-toggle-btn:hover {
+    background: rgba(249, 115, 22, 0.28);
+    border-color: rgba(249, 115, 22, 0.7);
+    transform: translateY(-1px);
+}
+
+.wheel-settings-group {
+    display: grid;
+    gap: 14px;
+}
+
+.wheel-actions-area {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.danger-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.14);
+    color: #fca5a5;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.danger-button:hover {
+    background: rgba(239, 68, 68, 0.26);
+    border-color: rgba(239, 68, 68, 0.7);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.wheel-settings-dialog {
+    max-width: 440px;
+    width: calc(100% - 24px);
+}
+
+.wheel-settings-dialog .modal-body {
+    display: grid;
+    gap: 14px;
+    margin: 12px 0 16px;
+}
+
+.wheel-settings-dialog .wheel-setting {
+    padding: 14px;
+    border-radius: 18px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.16);
 }
 
 .wheel-setting {
@@ -1876,31 +2139,62 @@ body[data-page="movies"] .action-btn:active {
     body[data-page="wheel"] .wheel-panel-inner {
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 16px;
         width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
         align-items: stretch;
     }
 
+    /* ── На мобильных круглое колесо заменяется на компактный слот-барабан ── */
     body[data-page="wheel"] .wheel-stage {
+        display: none !important;
+    }
+
+    body[data-page="wheel"] .mobile-drum-stage {
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
         order: 1;
-        width: min(100%, 88vw, 400px);
-        height: auto;
-        max-width: 400px;
-        max-height: none;
-        aspect-ratio: 1 / 1;
-        margin: 0 auto;
-        padding: 4px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        margin: 0 0 6px;
     }
 
     body[data-page="wheel"] .wheel-sidebar {
         order: 2;
         width: 100%;
+        max-width: 100%;
+        min-width: 0;
         display: grid;
-        gap: 12px;
+        gap: 10px;
+    }
+
+    body[data-page="wheel"] .desktop-settings-slot {
+        display: none !important;
+    }
+
+    body[data-page="wheel"] .wheel-settings-toggle-btn {
+        display: inline-flex;
     }
 
     body[data-page="wheel"] .wheel-sidebar h2 {
-        font-size: 1.25rem;
+        font-size: 1.15rem;
+    }
+
+    body[data-page="wheel"] #wheelHint {
+        font-size: 0.84rem;
+        margin: 0;
+        line-height: 1.35;
+    }
+
+    body[data-page="wheel"] .wheel-actions-area {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
 
     body[data-page="wheel"] #spinBtn {
@@ -1917,27 +2211,32 @@ body[data-page="movies"] .action-btn:active {
         justify-content: center;
     }
 
+    body[data-page="wheel"] .result-card {
+        padding: 12px 14px;
+        min-height: auto;
+    }
+
     body[data-page="wheel"] .wheel-list-panel {
         order: 3;
         width: 100%;
-        margin-top: 6px;
+        margin-top: 4px;
     }
 
     body[data-page="wheel"] .wheel-movie-list {
-        max-height: 340px;
-        gap: 8px;
+        max-height: 220px;
+        gap: 6px;
     }
 
     body[data-page="wheel"] .wheel-movie-item {
-        padding: 11px 12px;
-        gap: 10px;
-        border-radius: 14px;
+        padding: 9px 10px;
+        gap: 8px;
+        border-radius: 12px;
     }
 
     body[data-page="wheel"] .wheel-index {
-        width: 30px;
-        height: 30px;
-        font-size: 0.85rem;
+        width: 26px;
+        height: 26px;
+        font-size: 0.8rem;
     }
 
     /* ── Каталог фильмов на мобильных ── */
@@ -1963,38 +2262,70 @@ body[data-page="movies"] .action-btn:active {
         font-size: 0.9rem;
     }
 
-    .table-wrap {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+    /* Скрытие всех колонок, кроме Названия и Статуса на мобильных экранах */
+    body[data-page="movies"] .col-genre,
+    body[data-page="movies"] .col-comment,
+    body[data-page="movies"] .col-rating,
+    body[data-page="movies"] .col-actions {
+        display: none !important;
+    }
+
+    body[data-page="movies"] .table-wrap {
+        overflow-x: hidden;
         border-radius: 14px;
         margin: 4px 0 10px;
     }
 
-    table {
-        min-width: 600px;
+    body[data-page="movies"] table {
+        min-width: 0 !important;
+        width: 100% !important;
+        table-layout: fixed;
     }
 
-    body[data-page="movies"] table th,
-    body[data-page="movies"] table td {
-        padding: 9px 10px;
-        font-size: 0.85rem;
+    body[data-page="movies"] th.col-title,
+    body[data-page="movies"] td.col-title {
+        width: 62%;
+        padding: 10px 10px;
+        font-size: 0.88rem;
+        text-align: left;
+        vertical-align: middle;
     }
 
-    body[data-page="movies"] .comment-cell {
-        max-width: 150px;
+    body[data-page="movies"] th.col-status,
+    body[data-page="movies"] td.col-status {
+        width: 38%;
+        padding: 10px 10px;
+        font-size: 0.82rem;
+        text-align: right;
+        vertical-align: middle;
     }
 
-    .row-actions {
-        flex-wrap: nowrap;
-        gap: 6px;
+    body[data-page="movies"] .movie-title-text {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
+        line-height: 1.35;
     }
 
-    body[data-page="movies"] .action-btn {
-        min-height: 32px;
-        width: 32px;
-        height: 32px;
-        padding: 0;
-        font-size: 0.95rem;
+    body[data-page="movies"] .status-pill {
+        display: inline-block;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding: 4px 8px;
+        font-size: 0.76rem;
+    }
+
+    body[data-page="movies"] .movie-table-row {
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+
+    body[data-page="movies"] .movie-table-row:active {
+        background: rgba(56, 189, 248, 0.12);
     }
 
     .pagination-bar {
@@ -2123,14 +2454,26 @@ body[data-page="movies"] .action-btn:active {
     }
 
     body[data-page="wheel"] .wheel-stage {
-        width: min(100%, 86vw, 320px);
-        max-width: 320px;
+        display: none !important;
     }
 
-    .wheel-pointer {
-        border-left: 12px solid transparent;
-        border-right: 12px solid transparent;
-        border-top: 22px solid #f8fafc;
+    body[data-page="wheel"] .mobile-drum-stage {
+        display: flex !important;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .drum-housing {
+        width: min(100%, 270px);
+        max-width: 270px;
+        height: 118px;
+    }
+
+    .drum-card {
+        flex: 0 0 140px;
+        width: 140px;
+        height: 94px;
     }
 
     .hub-image-controls {
