@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://ribxwepxmiywgyrkzjlp.supabase.co https://*.supabase.co; font-src 'self' data: https:; object-src 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://ribxwepxmiywgyrkzjlp.supabase.co https://*.supabase.co; font-src 'self' data: https:; object-src 'none'; base-uri 'self'; form-action 'self';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>Кино — Колесо</title>
@@ -77,11 +78,12 @@
                     <div class="wheel-sidebar-header">
                         <h2>Готовы выбрать фильм?</h2>
                         <div class="wheel-header-actions">
-                            <button type="button" id="wheelSoundToggleBtn" class="wheel-sound-toggle-btn" title="Включить/выключить звук" aria-label="Включить/выключить звук">
+                            <button type="button" id="wheelSoundToggleBtn" class="wheel-sound-toggle-btn"
+                                title="Включить/выключить звук" aria-label="Включить/выключить звук">
                                 <span class="sound-icon" id="wheelSoundIcon" aria-hidden="true">🔊</span>
-                                <span class="sound-btn-text" id="wheelSoundText">Звук вкл</span>
                             </button>
-                            <button type="button" id="openWheelSettingsBtn" class="wheel-settings-toggle-btn" title="Настройки барабана" aria-label="Настройки барабана">
+                            <button type="button" id="openWheelSettingsBtn" class="wheel-settings-toggle-btn"
+                                title="Настройки барабана" aria-label="Настройки барабана">
                                 <span class="settings-gear-icon" aria-hidden="true">⚙️</span>
                                 <span class="settings-btn-text">Настройки</span>
                             </button>
@@ -96,7 +98,8 @@
                                     <span>Длительность прокрутки</span>
                                 </label>
                                 <div class="duration-input-wrap">
-                                    <input id="wheelDurationInput" type="number" min="1" max="60" step="1" placeholder="5">
+                                    <input id="wheelDurationInput" type="number" min="1" max="60" step="1"
+                                        placeholder="5">
                                     <span class="duration-unit">сек</span>
                                 </div>
                             </div>
@@ -108,7 +111,8 @@
                                         <span>Загрузить GIF</span>
                                         <input type="file" id="hubImageInput" accept="image/*" class="hidden">
                                     </label>
-                                    <button type="button" id="resetHubImageBtn" class="secondary-button compact hidden">Удалить GIF</button>
+                                    <button type="button" id="resetHubImageBtn"
+                                        class="secondary-button compact hidden">Удалить GIF</button>
                                 </div>
                             </div>
 
@@ -124,7 +128,8 @@
 
                     <div class="wheel-actions-area">
                         <button id="spinBtn" type="button">Крутить колесо</button>
-                        <button id="resetWheelBtn" type="button" class="hidden" style="background:rgba(148,163,184,0.12)">Сбросить колесо</button>
+                        <button id="resetWheelBtn" type="button" class="hidden"
+                            style="background:rgba(148,163,184,0.12)">Сбросить колесо</button>
                     </div>
                 </div>
 
@@ -134,13 +139,15 @@
         <!-- Модальное окно настроек барабана для мобильной версии -->
         <div id="wheelSettingsModal" class="modal hidden" aria-hidden="true">
             <div class="modal-backdrop" data-wheel-modal-close></div>
-            <div class="modal-dialog wheel-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="wheelSettingsTitle">
+            <div class="modal-dialog wheel-settings-dialog" role="dialog" aria-modal="true"
+                aria-labelledby="wheelSettingsTitle">
                 <div class="modal-header">
                     <div>
                         <p class="eyebrow">Параметры барабана</p>
                         <h2 id="wheelSettingsTitle">Настройки</h2>
                     </div>
-                    <button type="button" class="modal-close" data-wheel-modal-close aria-label="Закрыть окно">×</button>
+                    <button type="button" class="modal-close" data-wheel-modal-close
+                        aria-label="Закрыть окно">×</button>
                 </div>
                 <div class="modal-body" id="wheelSettingsModalBody"></div>
                 <div class="modal-actions">
@@ -153,7 +160,8 @@
         <div id="wheelWinnerOverlay" class="wheel-winner-overlay hidden" aria-live="polite">
             <div class="winner-overlay-backdrop" id="winnerOverlayBackdrop"></div>
             <div class="winner-overlay-card" id="winnerOverlayCard">
-                <button type="button" class="winner-overlay-close" id="closeWinnerOverlayBtn" aria-label="Закрыть">×</button>
+                <button type="button" class="winner-overlay-close" id="closeWinnerOverlayBtn"
+                    aria-label="Закрыть">×</button>
                 <div id="winnerOverlayContent"></div>
             </div>
         </div>
