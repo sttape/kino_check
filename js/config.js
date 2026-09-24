@@ -214,11 +214,47 @@ function checkWriteCooldown() {
     return true;
 }
 
+// ── Кэширование списка фильмов для мгновенной загрузки UI (0ms) ──────────
+const STORAGE_KEY_MOVIES_CACHE = "kino_movies_cache_v1";
+
+function getCachedMovies() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY_MOVIES_CACHE);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+        }
+    } catch (_) {}
+    return null;
+}
+
+function setCachedMovies(movies) {
+    if (!Array.isArray(movies)) return;
+    try {
+        localStorage.setItem(STORAGE_KEY_MOVIES_CACHE, JSON.stringify(movies));
+    } catch (_) {}
+}
+
+function clearCachedMovies() {
+    try {
+        localStorage.removeItem(STORAGE_KEY_MOVIES_CACHE);
+    } catch (_) {}
+}
+
+if (typeof window !== "undefined") {
+    window.getCachedMovies = getCachedMovies;
+    window.setCachedMovies = setCachedMovies;
+    window.clearCachedMovies = clearCachedMovies;
+}
+
 // ── Работа с базой данных (CRUD) ─────────────────────────────────────────
 
-// Загрузка всех фильмов
+// Загрузка всех фильмов (с автоматическим кэшированием и fallback)
 async function loadMovies() {
-    if (!supabase) return [];
+    if (!supabase) {
+        return getCachedMovies() || [];
+    }
     try {
         const { data, error } = await supabase
             .from("movies")
@@ -227,12 +263,16 @@ async function loadMovies() {
 
         if (error) {
             console.error("Ошибка загрузки фильмов:", error.message);
-            return [];
+            return getCachedMovies() || [];
         }
-        return data || [];
+        if (data && Array.isArray(data)) {
+            setCachedMovies(data);
+            return data;
+        }
+        return getCachedMovies() || [];
     } catch (err) {
         console.error("Сетевая ошибка при загрузке фильмов:", err);
-        return [];
+        return getCachedMovies() || [];
     }
 }
 
@@ -1083,7 +1123,53 @@ function updateNavAuthButtons() {
     });
 }
 
+// ── Плавный переход между страницами ─────────────────────────────────────
+function initPageTransitions() {
+    document.addEventListener("click", (e) => {
+        const link = e.target.closest("a[href]");
+        if (!link) return;
+
+        const rawHref = link.getAttribute("href");
+        if (!rawHref || rawHref.startsWith("#") || rawHref.startsWith("javascript:") || rawHref.startsWith("mailto:") || rawHref.startsWith("tel:")) {
+            return;
+        }
+
+        // Игнорируем внешние ссылки и клики с зажатыми модификаторами
+        if (link.target === "_blank" || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
+            return;
+        }
+
+        try {
+            const url = new URL(link.href, window.location.origin);
+            if (url.origin !== window.location.origin) return;
+
+            // Если кликнули на ссылку текущей страницы с теми же параметрами
+            if (url.pathname === window.location.pathname && url.search === window.location.search) {
+                return;
+            }
+
+            // Если браузер не поддерживает View Transitions API, плавно гасим текущую страницу перед переходом
+            if (!("startViewTransition" in document)) {
+                e.preventDefault();
+                document.body.classList.add("page-is-leaving");
+                setTimeout(() => {
+                    window.location.href = link.href;
+                }, 140);
+            }
+        } catch (_) {}
+    });
+
+    // При возврате по истории браузера (bfcache) сбрасываем класс анимации
+    window.addEventListener("pageshow", (e) => {
+        if (e.persisted) {
+            document.body.classList.remove("page-is-leaving");
+        }
+    });
+}
+
 window.addEventListener("DOMContentLoaded", () => {
+    initPageTransitions();
     updateNavAuthButtons();
     initSupabaseAuth();
 });
+

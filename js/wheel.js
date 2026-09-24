@@ -361,15 +361,106 @@ async function clearHubImage() {
     if (hubImageInput) hubImageInput.value = "";
 }
 
-// ---------------------- ЗАГРУЗКА ФИЛЬМОВ ----------------------
+// ---------------------- ЗАГРУЗКА ФИЛЬМОВ И МГНОВЕННАЯ ГИДРАТАЦИЯ ----------------------
+
+function drawLoadingPlaceholder() {
+    if (!ctx || !wheelCanvas) return;
+    const size = wheelCanvas.width;
+    const center = size / 2;
+    const radius = center - 8;
+
+    ctx.clearRect(0, 0, size, size);
+
+    // Внешний фон круга
+    ctx.beginPath();
+    ctx.arc(center, center, radius, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(11, 16, 32, 0.9)";
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "rgba(249, 115, 22, 0.4)";
+    ctx.stroke();
+
+    // Декоративные засечки по кругу
+    const dots = 18;
+    for (let i = 0; i < dots; i++) {
+        const angle = (i * 2 * Math.PI) / dots;
+        const px = center + (radius - 14) * Math.cos(angle);
+        const py = center + (radius - 14) * Math.sin(angle);
+        ctx.beginPath();
+        ctx.arc(px, py, 4, 0, Math.PI * 2);
+        ctx.fillStyle = palette[i % palette.length];
+        ctx.fill();
+    }
+
+    // Центральное свечение
+    const gradient = ctx.createRadialGradient(center, center, 10, center, center, radius * 0.5);
+    gradient.addColorStop(0, "rgba(249, 115, 22, 0.15)");
+    gradient.addColorStop(1, "rgba(11, 16, 32, 0)");
+    ctx.beginPath();
+    ctx.arc(center, center, radius * 0.5, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // Текст загрузки
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "800 36px Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("⚡ Загрузка колеса…", center, center - 16);
+
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "600 22px Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText("Подключение к базе фильмов", center, center + 32);
+}
+
+function renderSkeletonList() {
+    if (!wheelMovieList || !wheelCount) return;
+    wheelCount.textContent = "Загрузка...";
+    wheelMovieList.innerHTML = `
+        <div class="wheel-skeleton-item"></div>
+        <div class="wheel-skeleton-item"></div>
+        <div class="wheel-skeleton-item"></div>
+        <div class="wheel-skeleton-item"></div>
+        <div class="wheel-skeleton-item"></div>
+    `;
+}
 
 async function syncWheelState() {
     if (spinning) return;
 
-    const data = await loadMovies();
-    allMovies = Array.isArray(data) ? data : [];
+    // 1. Мгновенная гидратация из локального кэша (0ms задержки для пользователя)
+    const cached = typeof getCachedMovies === "function" ? getCachedMovies() : null;
+    let renderedFromCache = false;
 
-    applyFilterAndRender();
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+        allMovies = cached;
+        applyFilterAndRender();
+        renderedFromCache = true;
+    } else {
+        // Первый визит: показываем красивый лоадер и скелетон списка
+        drawLoadingPlaceholder();
+        renderSkeletonList();
+        if (drumTrack) {
+            drumTrack.innerHTML = `<div class="drum-empty-state"><span class="muted">⚡ Загрузка барабана…</span></div>`;
+        }
+    }
+
+    // 2. Фоновое обновление из Supabase
+    try {
+        const data = await loadMovies();
+        if (Array.isArray(data)) {
+            const hasChanged = JSON.stringify(data) !== JSON.stringify(allMovies);
+            allMovies = data;
+            if (!renderedFromCache || hasChanged) {
+                applyFilterAndRender();
+            }
+        }
+    } catch (e) {
+        console.error("Ошибка обновления колеса:", e);
+        if (!renderedFromCache) {
+            applyFilterAndRender();
+        }
+    }
 }
 
 function applyFilterAndRender() {
