@@ -76,10 +76,16 @@
                 <div class="wheel-sidebar">
                     <div class="wheel-sidebar-header">
                         <h2>Готовы выбрать фильм?</h2>
-                        <button type="button" id="openWheelSettingsBtn" class="wheel-settings-toggle-btn" title="Настройки барабана" aria-label="Настройки барабана">
-                            <span class="settings-gear-icon" aria-hidden="true">⚙️</span>
-                            <span class="settings-btn-text">Настройки</span>
-                        </button>
+                        <div class="wheel-header-actions">
+                            <button type="button" id="wheelSoundToggleBtn" class="wheel-sound-toggle-btn" title="Включить/выключить звук" aria-label="Включить/выключить звук">
+                                <span class="sound-icon" id="wheelSoundIcon" aria-hidden="true">🔊</span>
+                                <span class="sound-btn-text" id="wheelSoundText">Звук вкл</span>
+                            </button>
+                            <button type="button" id="openWheelSettingsBtn" class="wheel-settings-toggle-btn" title="Настройки барабана" aria-label="Настройки барабана">
+                                <span class="settings-gear-icon" aria-hidden="true">⚙️</span>
+                                <span class="settings-btn-text">Настройки</span>
+                            </button>
+                        </div>
                     </div>
                     <p id="wheelHint" class="muted">Добавьте несколько фильмов, затем нажмите кнопку вращения.</p>
 
@@ -120,8 +126,6 @@
                         <button id="spinBtn" type="button">Крутить колесо</button>
                         <button id="resetWheelBtn" type="button" class="hidden" style="background:rgba(148,163,184,0.12)">Сбросить колесо</button>
                     </div>
-                    <div id="wheelResult" class="result-card"></div>
-                    <a id="startWatchBtn" class="primary-link hidden" href="rating.html">Начать просмотр</a>
                 </div>
 
             </div>
@@ -142,6 +146,15 @@
                 <div class="modal-actions">
                     <button type="button" class="primary-button" data-wheel-modal-close>Готово</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Всплывающее окно победителя / выбывания (для ПК и мобильных) -->
+        <div id="wheelWinnerOverlay" class="wheel-winner-overlay hidden" aria-live="polite">
+            <div class="winner-overlay-backdrop" id="winnerOverlayBackdrop"></div>
+            <div class="winner-overlay-card" id="winnerOverlayCard">
+                <button type="button" class="winner-overlay-close" id="closeWinnerOverlayBtn" aria-label="Закрыть">×</button>
+                <div id="winnerOverlayContent"></div>
             </div>
         </div>
     </main>

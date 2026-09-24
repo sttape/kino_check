@@ -29,3 +29,17 @@ function loadLastMovieId() {
     if (!raw || Number.isNaN(value)) return null;
     return value;
 }
+
+// Звуковые эффекты барабана
+const STORAGE_KEY_WHEEL_SOUND = "wheel_sound_enabled";
+
+function loadWheelSound() {
+    const raw = localStorage.getItem(STORAGE_KEY_WHEEL_SOUND);
+    if (raw === null) return true; // по умолчанию включен
+    return raw === "true";
+}
+
+function saveWheelSound(enabled) {
+    localStorage.setItem(STORAGE_KEY_WHEEL_SOUND, String(enabled));
+}
+

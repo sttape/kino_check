@@ -43,6 +43,32 @@ const wheelSettingsContainer = document.getElementById("wheelSettingsContainer")
 const wheelSettingsModalBody = document.getElementById("wheelSettingsModalBody");
 const desktopSettingsSlot = document.getElementById("desktopSettingsSlot");
 
+const wheelSoundToggleBtn = document.getElementById("wheelSoundToggleBtn");
+const wheelSoundIcon = document.getElementById("wheelSoundIcon");
+const wheelSoundText = document.getElementById("wheelSoundText");
+
+const wheelWinnerOverlay = document.getElementById("wheelWinnerOverlay");
+const winnerOverlayBackdrop = document.getElementById("winnerOverlayBackdrop");
+const winnerOverlayCard = document.getElementById("winnerOverlayCard");
+const winnerOverlayContent = document.getElementById("winnerOverlayContent");
+const closeWinnerOverlayBtn = document.getElementById("closeWinnerOverlayBtn");
+
+function closeWinnerOverlay() {
+    if (wheelWinnerOverlay) {
+        wheelWinnerOverlay.classList.add("hidden");
+    }
+}
+
+if (closeWinnerOverlayBtn) {
+    closeWinnerOverlayBtn.addEventListener("click", closeWinnerOverlay);
+}
+
+if (winnerOverlayBackdrop) {
+    winnerOverlayBackdrop.addEventListener("click", closeWinnerOverlay);
+}
+
+let isWheelSoundEnabled = true;
+
 const mobileDrumStage = document.getElementById("mobileDrumStage");
 const drumWindow = document.getElementById("drumWindow");
 const drumTrack = document.getElementById("drumTrack");
@@ -109,12 +135,16 @@ function initWheelSettingsModal() {
 
     window.addEventListener("resize", () => {
         syncSettingsLocation();
-        if (!spinning && drumTrack && drumWindow && wheelMovies.length) {
-            const cardWidth = window.innerWidth <= 480 ? 140 : 150;
-            const windowW = drumWindow.clientWidth || 280;
-            const initialOffset = (windowW / 2) - (cardWidth / 2);
-            currentDrumTranslateX = initialOffset;
-            drumTrack.style.transform = `translate3d(${initialOffset}px, 0, 0)`;
+        if (!spinning) {
+            invalidateWheelBuffer();
+            drawWheel();
+            if (drumTrack && drumWindow && wheelMovies.length) {
+                const cardWidth = window.innerWidth <= 480 ? 140 : 150;
+                const windowW = drumWindow.clientWidth || 280;
+                const initialOffset = (windowW / 2) - (cardWidth / 2);
+                currentDrumTranslateX = initialOffset;
+                drumTrack.style.transform = `translate3d(${initialOffset}px, 0, 0)`;
+            }
         }
     });
     syncSettingsLocation();
@@ -164,6 +194,7 @@ window.addEventListener("DOMContentLoaded", async () => {
             });
         }
 
+        initWheelSound();
         initHubImage();
         await syncWheelState();
     } catch (err) {
@@ -353,9 +384,11 @@ function applyFilterAndRender() {
     if (resetWheelBtn) resetWheelBtn.classList.add("hidden");
     if (startWatchBtn) startWatchBtn.classList.add("hidden");
     if (wheelResult) wheelResult.textContent = "";
+    closeWinnerOverlay();
 
     updateHint();
     renderWheelList();
+    invalidateWheelBuffer();
     drawWheel();
     renderDrum();
 }
@@ -399,7 +432,120 @@ function renderWheelList() {
     });
 }
 
-// ---------------------- ОТРИСОВКА КОЛЕСА ----------------------
+// ---------------------- ОФФСКРИН БУФЕР И ОТРИСОВКА КОЛЕСА ----------------------
+
+let wheelBufferCanvas = null;
+let wheelBufferCtx = null;
+let isWheelBufferValid = false;
+
+function invalidateWheelBuffer() {
+    isWheelBufferValid = false;
+}
+
+function updateWheelBuffer() {
+    if (!wheelCanvas) return;
+    const size = wheelCanvas.width || 1200;
+
+    if (!wheelBufferCanvas) {
+        wheelBufferCanvas = document.createElement("canvas");
+    }
+    if (wheelBufferCanvas.width !== size || wheelBufferCanvas.height !== size) {
+        wheelBufferCanvas.width = size;
+        wheelBufferCanvas.height = size;
+    }
+
+    wheelBufferCtx = wheelBufferCanvas.getContext("2d");
+    if (!wheelBufferCtx) return;
+
+    wheelBufferCtx.clearRect(0, 0, size, size);
+
+    const count = wheelMovies.length;
+    if (!count) {
+        isWheelBufferValid = true;
+        return;
+    }
+
+    const center = size / 2;
+    const radius = center - 8;
+    const angleStep = (2 * Math.PI) / count;
+
+    // Подбираем крупный читаемый шрифт с учётом разрешения холста 1200px
+    const isSmallScreen = window.innerWidth <= 768;
+    let fontSize, maxChars;
+    if (count <= 10) {
+        fontSize = isSmallScreen ? 44 : 40;
+        maxChars = isSmallScreen ? 22 : 28;
+    } else if (count <= 20) {
+        fontSize = isSmallScreen ? 34 : 32;
+        maxChars = isSmallScreen ? 20 : 26;
+    } else if (count <= 38) {
+        fontSize = isSmallScreen ? 28 : 26;
+        maxChars = isSmallScreen ? 18 : 24;
+    } else if (count <= 55) {
+        fontSize = isSmallScreen ? 24 : 22;
+        maxChars = isSmallScreen ? 16 : 20;
+    } else if (count <= 80) {
+        fontSize = 18;
+        maxChars = 17;
+    } else {
+        fontSize = 15;
+        maxChars = 14;
+    }
+
+    for (let i = 0; i < count; i++) {
+        const startAngle = i * angleStep;
+        const endAngle = startAngle + angleStep;
+
+        // Сектор
+        wheelBufferCtx.beginPath();
+        wheelBufferCtx.moveTo(center, center);
+        wheelBufferCtx.arc(center, center, radius, startAngle, endAngle);
+        wheelBufferCtx.closePath();
+        wheelBufferCtx.fillStyle = palette[i % palette.length];
+        wheelBufferCtx.fill();
+
+        // Граница сектора
+        wheelBufferCtx.strokeStyle = "rgba(2, 6, 23, 0.55)";
+        wheelBufferCtx.lineWidth = count > 40 ? 2 : 3;
+        wheelBufferCtx.stroke();
+
+        // Текст на секторе
+        wheelBufferCtx.save();
+        wheelBufferCtx.translate(center, center);
+        wheelBufferCtx.rotate(startAngle + angleStep / 2);
+        wheelBufferCtx.textAlign = "right";
+        wheelBufferCtx.textBaseline = "middle";
+        wheelBufferCtx.font = `800 ${fontSize}px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+
+        let title = wheelMovies[i].title;
+        if (title.length > maxChars) {
+            title = title.slice(0, maxChars - 1) + "…";
+        }
+
+        // Тёмная обводка для максимальной контрастности и читаемости
+        wheelBufferCtx.lineWidth = isSmallScreen ? 6 : 4;
+        wheelBufferCtx.strokeStyle = "rgba(0, 0, 0, 0.85)";
+        wheelBufferCtx.strokeText(title, radius - 24, 0);
+
+        wheelBufferCtx.fillStyle = "#ffffff";
+        wheelBufferCtx.fillText(title, radius - 24, 0);
+        wheelBufferCtx.restore();
+
+        // Декоративные металлические шпильки по внешнему ободу
+        const pinAngle = startAngle;
+        const pinX = center + (radius - 12) * Math.cos(pinAngle);
+        const pinY = center + (radius - 12) * Math.sin(pinAngle);
+        wheelBufferCtx.beginPath();
+        wheelBufferCtx.arc(pinX, pinY, count > 40 ? 2.5 : 4, 0, Math.PI * 2);
+        wheelBufferCtx.fillStyle = "rgba(255, 255, 255, 0.9)";
+        wheelBufferCtx.fill();
+        wheelBufferCtx.lineWidth = 1;
+        wheelBufferCtx.strokeStyle = "rgba(0, 0, 0, 0.6)";
+        wheelBufferCtx.stroke();
+    }
+
+    isWheelBufferValid = true;
+}
 
 function drawWheel() {
     if (!ctx || !wheelCanvas) return;
@@ -428,75 +574,21 @@ function drawWheel() {
         return;
     }
 
-    const angleStep = (2 * Math.PI) / count;
-
-    // Подбираем крупный читаемый шрифт с учётом разрешения холста 1200px
-    const isSmallScreen = window.innerWidth <= 768;
-    let fontSize, maxChars;
-    if (count <= 10) {
-        fontSize = isSmallScreen ? 44 : 40;
-        maxChars = isSmallScreen ? 22 : 28;
-    } else if (count <= 20) {
-        fontSize = isSmallScreen ? 34 : 32;
-        maxChars = isSmallScreen ? 20 : 26;
-    } else if (count <= 38) {
-        fontSize = isSmallScreen ? 28 : 26;
-        maxChars = isSmallScreen ? 18 : 24;
-    } else if (count <= 55) {
-        fontSize = isSmallScreen ? 24 : 22;
-        maxChars = isSmallScreen ? 16 : 20;
-    } else if (count <= 80) {
-        fontSize = 18;
-        maxChars = 17;
-    } else {
-        fontSize = 15;
-        maxChars = 14;
+    if (!isWheelBufferValid || !wheelBufferCanvas) {
+        updateWheelBuffer();
     }
 
-    for (let i = 0; i < count; i++) {
-        const startAngle = currentRotation + i * angleStep;
-        const endAngle = startAngle + angleStep;
-
-        // Сектор
-        ctx.beginPath();
-        ctx.moveTo(center, center);
-        ctx.arc(center, center, radius, startAngle, endAngle);
-        ctx.closePath();
-        ctx.fillStyle = palette[i % palette.length];
-        ctx.fill();
-
-        // Граница сектора
-        ctx.strokeStyle = "rgba(2, 6, 23, 0.55)";
-        ctx.lineWidth = count > 40 ? 2 : 3;
-        ctx.stroke();
-
-        // Текст на секторе
-        ctx.save();
-        ctx.translate(center, center);
-        ctx.rotate(startAngle + angleStep / 2);
-        ctx.textAlign = "right";
-        ctx.textBaseline = "middle";
-        ctx.font = `800 ${fontSize}px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-
-        let title = wheelMovies[i].title;
-        if (title.length > maxChars) {
-            title = title.slice(0, maxChars - 1) + "…";
-        }
-
-        // Тёмная обводка для максимальной контрастности и читаемости
-        ctx.lineWidth = isSmallScreen ? 6 : 4;
-        ctx.strokeStyle = "rgba(0, 0, 0, 0.85)";
-        ctx.strokeText(title, radius - 24, 0);
-
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText(title, radius - 24, 0);
-        ctx.restore();
-    }
+    // Мгновенная отрисовка буфера с поворотом (GPU texture blit)
+    ctx.save();
+    ctx.translate(center, center);
+    ctx.rotate(currentRotation);
+    ctx.drawImage(wheelBufferCanvas, -center, -center);
+    ctx.restore();
 
     // Внешний обод
     ctx.beginPath();
     ctx.arc(center, center, radius, 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
     ctx.lineWidth = 6;
     ctx.stroke();
 
@@ -508,6 +600,118 @@ function drawWheel() {
     ctx.lineWidth = 4;
     ctx.strokeStyle = "#f97316";
     ctx.stroke();
+}
+
+// ---------------------- АУДИО ЭФФЕКТЫ (Web Audio API) ----------------------
+
+let audioCtx = null;
+let lastTickSoundTime = 0;
+
+function initWheelSound() {
+    isWheelSoundEnabled = typeof loadWheelSound === "function" ? loadWheelSound() : true;
+    updateSoundUI();
+
+    if (wheelSoundToggleBtn) {
+        wheelSoundToggleBtn.addEventListener("click", toggleWheelSound);
+    }
+}
+
+function toggleWheelSound() {
+    isWheelSoundEnabled = !isWheelSoundEnabled;
+    if (typeof saveWheelSound === "function") {
+        saveWheelSound(isWheelSoundEnabled);
+    }
+    updateSoundUI();
+    if (isWheelSoundEnabled) {
+        playTickSound();
+    }
+}
+
+function updateSoundUI() {
+    if (wheelSoundIcon) {
+        wheelSoundIcon.textContent = isWheelSoundEnabled ? "🔊" : "🔇";
+    }
+    if (wheelSoundText) {
+        wheelSoundText.textContent = isWheelSoundEnabled ? "Звук вкл" : "Без звука";
+    }
+    if (wheelSoundToggleBtn) {
+        if (isWheelSoundEnabled) {
+            wheelSoundToggleBtn.classList.remove("is-muted");
+            wheelSoundToggleBtn.title = "Выключить звук";
+        } else {
+            wheelSoundToggleBtn.classList.add("is-muted");
+            wheelSoundToggleBtn.title = "Включить звук";
+        }
+    }
+}
+
+function getAudioContext() {
+    if (!audioCtx) {
+        const AudioClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioClass) {
+            audioCtx = new AudioClass();
+        }
+    }
+    if (audioCtx && audioCtx.state === "suspended") {
+        audioCtx.resume().catch(() => {});
+    }
+    return audioCtx;
+}
+
+function playTickSound() {
+    if (!isWheelSoundEnabled) return;
+    try {
+        const now = performance.now();
+        if (now - lastTickSoundTime < 32) return;
+        lastTickSoundTime = now;
+
+        const aCtx = getAudioContext();
+        if (!aCtx) return;
+
+        const osc = aCtx.createOscillator();
+        const gain = aCtx.createGain();
+
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(520, aCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(120, aCtx.currentTime + 0.025);
+
+        gain.gain.setValueAtTime(0.06, aCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, aCtx.currentTime + 0.025);
+
+        osc.connect(gain);
+        gain.connect(aCtx.destination);
+
+        osc.start(aCtx.currentTime);
+        osc.stop(aCtx.currentTime + 0.025);
+    } catch (e) {}
+}
+
+function playWinSound() {
+    if (!isWheelSoundEnabled) return;
+    try {
+        const aCtx = getAudioContext();
+        if (!aCtx) return;
+
+        const now = aCtx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+            const osc = aCtx.createOscillator();
+            const gain = aCtx.createGain();
+
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+            gain.gain.setValueAtTime(0, now + idx * 0.08);
+            gain.gain.linearRampToValueAtTime(0.1, now + idx * 0.08 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+
+            osc.connect(gain);
+            gain.connect(aCtx.destination);
+
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 0.4);
+        });
+    } catch (e) {}
 }
 
 // ---------------------- ВРАЩЕНИЕ ----------------------
@@ -580,6 +784,7 @@ function renderDrum() {
 function spinWheel() {
     spinning = true;
     spinBtn.disabled = true;
+    closeWinnerOverlay();
     if (startWatchBtn) startWatchBtn.classList.add("hidden");
     if (wheelResult) wheelResult.textContent = "Колесо крутится…";
 
@@ -600,8 +805,8 @@ function spinWheel() {
 
     // Вычисляем целевой угол поворота колеса targetRotation так, чтобы:
     // (1.5 * Math.PI - (targetRotation % 2PI)) == targetSliceAngle
-    const turns = 4 + Math.floor(Math.random() * 3); // 4-6 полных оборотов
-    const currentNorm = currentRotation % (2 * Math.PI);
+    const turns = 5 + Math.floor(Math.random() * 3); // 5-7 полных оборотов
+    const currentNorm = ((currentRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
     let neededNorm = (1.5 * Math.PI - targetSliceAngle) % (2 * Math.PI);
     if (neededNorm < 0) neededNorm += 2 * Math.PI;
 
@@ -613,6 +818,9 @@ function spinWheel() {
 
     const duration = Math.max(1000, (loadWheelDuration ? loadWheelDuration() : 5) * 1000);
     const startTime = performance.now();
+
+    const pointerEl = document.querySelector(".wheel-pointer");
+    let lastTickSector = -1;
 
     // Подготовка данных для анимации мобильного барабана
     const cardWidth = window.innerWidth <= 480 ? 140 : 150;
@@ -670,11 +878,30 @@ function spinWheel() {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
 
-        // Плавное замедление (ease-out quartic)
-        const eased = 1 - Math.pow(1 - progress, 4);
+        // Шелковисто-плавная кривая замедления с реалистичной физикой инерции
+        const eased = 1 - Math.pow(1 - progress, 4.6);
         currentRotation = startAngle + (targetRotation - startAngle) * eased;
 
         drawWheel();
+
+        // Реалистичная микро-анимация отклонения стрелочки
+        if (pointerEl && count > 0) {
+            const pointerAngleInWheel = ((1.5 * Math.PI - (currentRotation % (2 * Math.PI))) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+            const currentSector = Math.floor(pointerAngleInWheel / angleStep);
+            const sectorFrac = (pointerAngleInWheel % angleStep) / angleStep;
+
+            if (currentSector !== lastTickSector) {
+                lastTickSector = currentSector;
+                playTickSound();
+            }
+
+            let needleTilt = 0;
+            if (sectorFrac < 0.22) {
+                needleTilt = Math.sin((sectorFrac / 0.22) * Math.PI) * -12;
+            }
+            const speedMultiplier = Math.min(1, (1 - progress) * 2.2);
+            pointerEl.style.transform = `translateX(-50%) rotate(${needleTilt * speedMultiplier}deg)`;
+        }
 
         if (drumTrack) {
             const drumCurrentX = drumStartTranslateX + (drumTargetTranslateX - drumStartTranslateX) * eased;
@@ -688,6 +915,10 @@ function spinWheel() {
             currentRotation = targetRotation;
             drawWheel();
 
+            if (pointerEl) {
+                pointerEl.style.transform = "translateX(-50%) rotate(0deg)";
+            }
+
             if (drumTrack) {
                 drumTrack.style.transform = `translate3d(${drumTargetTranslateX}px, 0, 0)`;
                 currentDrumTranslateX = drumTargetTranslateX;
@@ -695,6 +926,7 @@ function spinWheel() {
                 if (winnerCard) winnerCard.classList.add("winner-highlight");
             }
 
+            playWinSound();
             finishSpin(selectedMovie);
         }
     }
@@ -707,29 +939,59 @@ function finishSpin(winner) {
     if (spinBtn) spinBtn.disabled = false;
 
     const isElimination = eliminationMode;
-    const labelTitle = isElimination ? "Выбыл" : "Победил";
-    const labelColor = isElimination ? "#f87171" : "#f97316";
-
-    if (wheelResult) {
-        wheelResult.innerHTML = `
-            <div>
-                <p class="eyebrow" style="margin-bottom:4px; color:${labelColor};">${labelTitle}</p>
-                <strong style="font-size:1.25rem; display:block; margin-bottom:4px;">${escapeHtml(winner.title)}</strong>
-                <p class="muted" style="margin:0; font-size:0.9rem;">${escapeHtml(winner.genre || "Без жанра")}</p>
-            </div>
-        `;
-    }
 
     saveLastMovieId(winner.id);
 
-    if (isElimination) {
-        if (startWatchBtn) startWatchBtn.classList.add("hidden");
-        eliminateMovie(winner.id);
-    } else {
-        if (startWatchBtn) {
-            startWatchBtn.classList.remove("hidden");
-            startWatchBtn.href = `rating.html?id=${winner.id}`;
+    // Всплывающее окно поверх колеса
+    if (wheelWinnerOverlay && winnerOverlayContent) {
+        if (isElimination) {
+            if (winnerOverlayCard) {
+                winnerOverlayCard.className = "winner-overlay-card is-elimination";
+            }
+            const remainingCount = wheelMovies.length - 1;
+            winnerOverlayContent.innerHTML = `
+                <p class="winner-overlay-eyebrow elim">❌ Выбыл из колеса</p>
+                <h3 class="winner-overlay-title">${escapeHtml(winner.title)}</h3>
+                <p class="winner-overlay-genre">${escapeHtml(winner.genre || "Без жанра")}</p>
+                <span class="winner-overlay-remaining">Осталось в колесе: ${remainingCount}</span>
+                <div class="winner-overlay-actions">
+                    <button type="button" class="primary-button" id="overlayNextElimBtn">${remainingCount <= 1 ? 'Показать победителя' : 'Продолжить выбывание'}</button>
+                </div>
+            `;
+            const nextElimBtn = document.getElementById("overlayNextElimBtn");
+            if (nextElimBtn) {
+                nextElimBtn.addEventListener("click", () => {
+                    closeWinnerOverlay();
+                });
+            }
+        } else {
+            if (winnerOverlayCard) {
+                winnerOverlayCard.className = "winner-overlay-card";
+            }
+            winnerOverlayContent.innerHTML = `
+                <p class="winner-overlay-eyebrow win">🏆 Выбран фильм</p>
+                <h3 class="winner-overlay-title">${escapeHtml(winner.title)}</h3>
+                <p class="winner-overlay-genre">${escapeHtml(winner.genre || "Без жанра")}</p>
+                <div class="winner-overlay-actions">
+                    <a class="primary-link" href="rating.html?id=${winner.id}">🍿 Начать просмотр</a>
+                    <button type="button" class="secondary-button" id="overlaySpinAgainBtn">Крутить снова</button>
+                </div>
+            `;
+            const spinAgainBtn = document.getElementById("overlaySpinAgainBtn");
+            if (spinAgainBtn) {
+                spinAgainBtn.addEventListener("click", () => {
+                    closeWinnerOverlay();
+                    if (!spinning && wheelMovies.length) {
+                        spinWheel();
+                    }
+                });
+            }
         }
+        wheelWinnerOverlay.classList.remove("hidden");
+    }
+
+    if (isElimination) {
+        eliminateMovie(winner.id);
     }
 }
 
@@ -738,11 +1000,11 @@ function finishSpin(winner) {
 if (modeNormalBtn) {
     modeNormalBtn.addEventListener("click", () => {
         if (spinning) return;
+        closeWinnerOverlay();
         eliminationMode = false;
         modeNormalBtn.classList.add("active");
         if (modeEliminationBtn) modeEliminationBtn.classList.remove("active");
-        if (wheelResult) wheelResult.textContent = "";
-        if (startWatchBtn) startWatchBtn.classList.add("hidden");
+        if (resetWheelBtn) resetWheelBtn.classList.add("hidden");
         updateHint();
         renderDrum();
     });
@@ -751,11 +1013,11 @@ if (modeNormalBtn) {
 if (modeEliminationBtn) {
     modeEliminationBtn.addEventListener("click", () => {
         if (spinning) return;
+        closeWinnerOverlay();
         eliminationMode = true;
         modeEliminationBtn.classList.add("active");
         if (modeNormalBtn) modeNormalBtn.classList.remove("active");
-        if (wheelResult) wheelResult.textContent = "";
-        if (startWatchBtn) startWatchBtn.classList.add("hidden");
+        if (resetWheelBtn) resetWheelBtn.classList.add("hidden");
         updateHint();
         renderDrum();
     });
@@ -776,6 +1038,7 @@ if (resetWheelBtn) {
 function eliminateMovie(id) {
     wheelMovies = wheelMovies.filter(m => m.id !== id);
     renderWheelList();
+    invalidateWheelBuffer();
     drawWheel();
     renderDrum();
 
@@ -784,18 +1047,29 @@ function eliminateMovie(id) {
     if (wheelMovies.length === 1) {
         const finalWinner = wheelMovies[0];
         saveLastMovieId(finalWinner.id);
-        if (wheelResult) {
-            wheelResult.innerHTML += `
-                <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(148,163,184,0.2);">
-                    <p class="eyebrow" style="margin-bottom:4px; color:#4ade80;">Победил</p>
-                    <strong style="font-size:1.25rem; display:block; margin-bottom:4px; color:#4ade80;">${escapeHtml(finalWinner.title)}</strong>
-                    <p class="muted" style="margin:0; font-size:0.9rem;">${escapeHtml(finalWinner.genre || "Без жанра")}</p>
+
+        // Финальный победитель в режиме на выбывание прямо поверх колеса
+        if (wheelWinnerOverlay && winnerOverlayContent) {
+            if (winnerOverlayCard) {
+                winnerOverlayCard.className = "winner-overlay-card is-final-winner";
+            }
+            winnerOverlayContent.innerHTML = `
+                <p class="winner-overlay-eyebrow final">👑 Абсолютный победитель</p>
+                <h3 class="winner-overlay-title">${escapeHtml(finalWinner.title)}</h3>
+                <p class="winner-overlay-genre">${escapeHtml(finalWinner.genre || "Без жанра")}</p>
+                <div class="winner-overlay-actions">
+                    <a class="primary-link" href="rating.html?id=${finalWinner.id}">🍿 Начать просмотр</a>
+                    <button type="button" class="secondary-button" id="overlayResetBtn">Сбросить колесо</button>
                 </div>
             `;
-        }
-        if (startWatchBtn) {
-            startWatchBtn.classList.remove("hidden");
-            startWatchBtn.href = `rating.html?id=${finalWinner.id}`;
+            const resetBtn = document.getElementById("overlayResetBtn");
+            if (resetBtn) {
+                resetBtn.addEventListener("click", () => {
+                    closeWinnerOverlay();
+                    applyFilterAndRender();
+                });
+            }
+            wheelWinnerOverlay.classList.remove("hidden");
         }
     }
 }
