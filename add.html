@@ -1,9 +1,17 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" style="background-color: #050816; color-scheme: dark;">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#050816">
+    <style>
+        html, body {
+            background-color: #050816 !important;
+            color-scheme: dark;
+        }
+    </style>
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://ribxwepxmiywgyrkzjlp.supabase.co https://*.supabase.co; font-src 'self' data: https:; object-src 'none'; base-uri 'self'; form-action 'self';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -13,9 +21,9 @@
 
 <body data-page="add">
     <header class="site-header">
-        <div>
+        <div class="brand-block">
             <a class="brand" href="index.html">Qeqoqeq кино</a>
-            <p class="brand-note">Пополнение каталога</p>
+            <p class="brand-note">Выбирайте, смотрите, оценивайте</p>
         </div>
         <nav class="site-nav" aria-label="Основная навигация">
             <a class="nav-link" href="index.html">Колесо</a>
@@ -26,58 +34,71 @@
     </header>
 
     <main class="page-shell">
-        <section class="hero-card compact">
-            <p class="eyebrow">Новый фильм</p>
-            <h1>Добавьте фильм в каталог</h1>
-            <p class="lead">Название обязательно, остальное можно заполнить позже. После сохранения вы сразу попадёте в
-                список.</p>
-        </section>
+        <section class="panel add-panel-split">
+            <!-- Левый блок: Ручное добавление -->
+            <div class="add-form-col">
+                <div class="section-title compact-title">
+                    <h2>Добавить фильм</h2>
+                    <span class="muted add-badge">Вручную</span>
+                </div>
+                <form id="addMovieForm" class="movie-form">
+                    <label>
+                        <span>Название</span>
+                        <input id="movieTitle" type="text" required placeholder="Например, Интерстеллар">
+                    </label>
+                    <label>
+                        <span>Жанр</span>
+                        <input id="movieGenre" type="text" placeholder="Фантастика, драма, комедия...">
+                    </label>
+                    <label>
+                        <span>Комментарий</span>
+                        <textarea id="movieComment" placeholder="Почему этот фильм хочется посмотреть?" rows="2"></textarea>
+                    </label>
+                    <label>
+                        <span>Статус</span>
+                        <select id="movieStatus">
+                            <option>Не просмотрено</option>
+                            <option>Просмотрено</option>
+                            <option>Запланировано</option>
+                            <option>Скоро выйдет</option>
+                            <option>Не вышел</option>
+                            <option>НЕ ОХОТА</option>
+                        </select>
+                    </label>
+                    <div class="form-actions">
+                        <button type="submit">Добавить фильм</button>
+                        <a class="secondary-link" href="movies.html">К списку фильмов</a>
+                    </div>
+                </form>
+            </div>
 
-        <section class="panel form-panel">
-            <div class="import-card">
-                <div>
-                    <h2>Импорт CSV</h2>
-                    <p class="muted">
-                        Поддерживаемые колонки: <code>id</code>, <code>title</code>, <code>genre</code>,
-                        <code>comment</code>, <code>status</code>, <code>ratings</code>.<br>
-                        Первая строка — заголовки. Колонка <code>id</code> игнорируется (Supabase генерирует ID).<br>
-                        Разделитель: запятая <code>,</code> или точка с запятой <code>;</code> (Excel).
+            <!-- Правый блок: Импорт из файла -->
+            <div class="add-import-col import-card">
+                <div class="section-title compact-title">
+                    <h2>Импорт из файла</h2>
+                    <span class="muted add-badge">CSV</span>
+                </div>
+
+                <!-- Drag & Drop зона для загрузки CSV -->
+                <div id="csvDropZone" class="file-dropzone" tabindex="0" role="button" aria-label="Перетащите CSV-файл сюда или нажмите для выбора">
+                    <div class="dropzone-body">
+                        <div class="dropzone-icon" aria-hidden="true">📥</div>
+                        <p class="dropzone-main-text">Перетащите CSV-файл сюда</p>
+                        <p class="dropzone-sub-text">или <span class="dropzone-link">выберите файл</span></p>
+                        <span class="dropzone-tag">до 5 МБ • UTF-8 / Windows-1251</span>
+                    </div>
+                    <input type="file" id="csvInput" accept=".csv,text/csv,text/plain" class="hidden">
+                </div>
+
+                <div class="import-instructions">
+                    <p class="muted import-description">
+                        <strong>Колонки:</strong> <code>title</code>, <code>genre</code>, <code>comment</code>, <code>status</code>, <code>ratings</code>.<br>
+                        <strong>Разделитель:</strong> запятая <code>,</code> или точка с запятой <code>;</code>
                     </p>
                 </div>
-                <div class="import-card-actions">
-                    <label class="file-input">
-                        <span>Загрузить CSV</span>
-                        <input type="file" id="csvInput" accept=".csv,text/csv">
-                    </label>
-                    <p id="csvImportStatus" class="muted" style="margin:0; font-size:0.9rem;"></p>
-                </div>
+
+                <div id="csvImportStatus" class="csv-status-box hidden" role="status" aria-live="polite"></div>
             </div>
-            <form id="addMovieForm" class="movie-form">
-                <label>
-                    <span>Название</span>
-                    <input id="movieTitle" type="text" required placeholder="Например, Интерстеллар">
-                </label>
-                <label>
-                    <span>Жанр</span>
-                    <input id="movieGenre" type="text" placeholder="Фантастика, драма, комедия...">
-                </label>
-                <label>
-                    <span>Комментарий</span>
-                    <textarea id="movieComment" placeholder="Почему этот фильм хочется посмотреть?"></textarea>
-                </label>
-                <label>
-                    <span>Статус</span>
-                    <select id="movieStatus">
-                        <option>Не просмотрено</option>
-                        <option>Просмотрено</option>
-                        <option>Запланировано</option>
-                        <option>Скоро выйдет</option>
-                        <option>Не вышел</option>
-                        <option>НЕ ОХОТА</option>
-                    </select>
-                </label>
-                <button type="submit">Добавить фильм</button>
-            </form>
         </section>
     </main>
 

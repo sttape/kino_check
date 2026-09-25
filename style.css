@@ -18,12 +18,17 @@
 }
 
 html {
+    background-color: #050816;
+    color-scheme: dark;
     scroll-behavior: smooth;
     width: 100%;
     overflow-x: hidden;
+    scrollbar-gutter: stable;
 }
 
 body {
+    background-color: #050816;
+    color-scheme: dark;
     margin: 0;
     width: 100%;
     overflow-x: hidden;
@@ -70,14 +75,22 @@ button {
     border: none;
 }
 
+/* ── Шапка сайта (унифицированная для всех страниц) ─────────────────── */
 .site-header {
-    width: min(1180px, calc(100% - 32px));
+    width: min(1320px, calc(100% - 48px));
     margin: 0 auto;
-    padding: 28px 0 8px;
+    padding: 16px 0 10px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 20px;
+    box-sizing: border-box;
+}
+
+.brand-block {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 
 .brand {
@@ -85,18 +98,21 @@ button {
     font-size: 1.35rem;
     font-weight: 800;
     letter-spacing: 0.02em;
+    line-height: 1.2;
 }
 
 .brand-note {
-    margin: 6px 0 0;
+    margin: 0;
     color: var(--muted);
-    font-size: 0.95rem;
+    font-size: 0.88rem;
+    line-height: 1.3;
 }
 
 .site-nav {
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
 }
 
 .nav-link,
@@ -108,14 +124,20 @@ button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 46px;
-    padding: 0 18px;
+    min-height: 42px;
+    padding: 0 16px;
     border-radius: 999px;
     border: 1px solid var(--border);
     color: var(--text);
     background: rgba(15, 23, 42, 0.7);
-    box-shadow: 0 12px 30px rgba(2, 6, 23, 0.18);
-    transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    box-shadow: 0 8px 24px rgba(2, 6, 23, 0.18);
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, color 160ms ease;
 }
 
 .nav-link:hover,
@@ -125,111 +147,55 @@ button {
 #saveRatingBtn:hover,
 #addMovieForm button:hover {
     transform: translateY(-1px);
-    border-color: rgba(248, 250, 252, 0.3);
+    border-color: rgba(248, 250, 252, 0.35);
+    background: rgba(30, 41, 59, 0.85);
 }
 
 .nav-link.active {
     background: linear-gradient(135deg, var(--accent), #fb7185);
     border-color: transparent;
-    box-shadow: 0 18px 40px rgba(249, 115, 22, 0.25);
-}
-
-/* ── Плавные переходы между страницами (Cross-Document View Transitions) ── */
-@media (prefers-reduced-motion: no-preference) {
-    @view-transition {
-        navigation: auto;
-    }
-
-    .site-header {
-        view-transition-name: site-header;
-    }
-
-    .page-shell {
-        view-transition-name: page-shell;
-    }
-
-    ::view-transition-old(page-shell) {
-        animation: 0.2s cubic-bezier(0.4, 0, 1, 1) both pageFadeOut;
-    }
-
-    ::view-transition-new(page-shell) {
-        animation: 0.28s cubic-bezier(0.16, 1, 0.3, 1) both pageFadeIn;
-    }
-
-    @keyframes pageFadeOut {
-        from {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-        to {
-            opacity: 0;
-            transform: translateY(-8px) scale(0.995);
-        }
-    }
-
-    @keyframes pageFadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(12px) scale(0.995);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-    }
+    color: #ffffff;
+    box-shadow: 0 10px 28px rgba(249, 115, 22, 0.3);
 }
 
 .page-shell {
-    width: min(1180px, calc(100% - 32px));
+    width: min(1320px, calc(100% - 48px));
     margin: 0 auto;
-    padding: 18px 0 56px;
+    padding: 8px 0 36px;
     display: grid;
-    gap: 22px;
-    animation: pageEntrance 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-body.page-is-leaving .page-shell {
-    opacity: 0 !important;
-    transform: translateY(-8px) scale(0.995) !important;
-    transition: opacity 0.16s ease-in, transform 0.16s ease-in !important;
-    pointer-events: none;
-}
-
-@keyframes pageEntrance {
-    0% {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    gap: 16px;
+    box-sizing: border-box;
 }
 
 .hero-card,
 .panel {
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 28px;
+    border-radius: 20px;
     box-shadow: var(--shadow);
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
 }
 
 .hero-card {
-    padding: 30px;
+    padding: 18px 24px;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .hero-card.compact {
-    padding-bottom: 24px;
+    padding: 18px 24px;
 }
 
 .eyebrow {
-    margin: 0 0 10px;
+    margin: 0 0 3px;
     text-transform: uppercase;
-    letter-spacing: 0.24em;
+    letter-spacing: 0.2em;
     color: var(--accent-2);
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     font-weight: 800;
 }
 
@@ -241,22 +207,25 @@ p {
 
 h1 {
     margin-bottom: 0;
-    font-size: clamp(2.2rem, 5vw, 4.8rem);
-    line-height: 1.02;
-    max-width: 13ch;
+    font-size: clamp(1.35rem, 2.2vw, 1.85rem);
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    max-width: none;
 }
 
 h2 {
     margin-bottom: 0;
-    font-size: clamp(1.4rem, 2vw, 2rem);
+    font-size: clamp(1.2rem, 1.8vw, 1.45rem);
+    font-weight: 700;
 }
 
 .lead {
-    max-width: 62ch;
-    margin: 14px 0 0;
+    max-width: 85ch;
+    margin: 5px 0 0;
     color: var(--muted);
-    font-size: 1.05rem;
-    line-height: 1.7;
+    font-size: 0.92rem;
+    line-height: 1.45;
 }
 
 .muted {
@@ -303,95 +272,25 @@ h2 {
 
 .panel {
     padding: 24px;
+    border-radius: 20px;
+    box-sizing: border-box;
 }
 
 .wheel-panel {
     width: 100%;
     margin: 0 auto;
-    padding: 28px;
-    border-radius: 28px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow);
+    padding: 20px 24px;
+    border-radius: 20px;
 }
 
 .wheel-panel-inner {
     max-width: 100%;
     display: grid;
-    grid-template-columns: 280px 1fr 300px;
-    gap: 28px;
-    align-items: start;
-}
-
-/* ── Стили на всю ширину экрана для колеса ───────────────────────────── */
-body[data-page="wheel"] .site-header {
-    width: min(calc(100% - 48px), calc(78vh + 760px));
-    margin: 0 auto;
-    padding: 12px 0 6px;
-}
-
-body[data-page="wheel"] .page-shell {
-    width: min(calc(100% - 48px), calc(78vh + 760px));
-    margin: 0 auto;
-    padding: 6px 0 18px;
-    gap: 12px;
-}
-
-body[data-page="wheel"] .hero-card {
-    width: min(860px, 100%);
-    margin: 0 auto;
-    padding: 10px 24px;
-    border-radius: 18px;
-    text-align: center;
-}
-
-body[data-page="wheel"] .hero-card .eyebrow {
-    margin: 0 auto 2px;
-    font-size: 0.8rem;
-    letter-spacing: 0.2em;
-}
-
-body[data-page="wheel"] .hero-card h1 {
-    font-size: clamp(1.6rem, 2.2vw, 2.2rem);
-    max-width: none;
-    line-height: 1.15;
-    font-weight: 800;
-}
-
-body[data-page="wheel"] .hero-card .lead {
-    margin: 4px auto 0;
-    font-size: 0.98rem;
-    max-width: 68ch;
-    line-height: 1.4;
-    color: rgba(226, 232, 240, 0.85);
-}
-
-body[data-page="wheel"] .wheel-panel {
-    padding: 16px 24px;
-}
-
-body[data-page="wheel"] .wheel-panel-inner {
-    grid-template-columns: 320px 1fr 340px;
+    grid-template-columns: 290px 1fr 310px;
     gap: 24px;
     align-items: start;
     width: 100%;
 }
-
-body[data-page="wheel"] .wheel-stage {
-    width: min(78vh, 100%);
-    height: min(78vh, 100%);
-    max-width: 78vh;
-    max-height: 78vh;
-    aspect-ratio: 1 / 1;
-    margin: 0 auto;
-    padding: 4px;
-    align-self: start;
-}
-
-body[data-page="wheel"] .wheel-movie-list {
-    max-height: 70vh;
-}
-
 
 .wheel-list-panel {
     display: grid;
@@ -407,8 +306,8 @@ body[data-page="wheel"] .wheel-movie-list {
 
 .wheel-movie-list {
     display: grid;
-    gap: 10px;
-    max-height: 640px;
+    gap: 8px;
+    max-height: 68vh;
     overflow-y: auto;
     overflow-x: hidden;
     padding-right: 4px;
@@ -427,6 +326,7 @@ body[data-page="wheel"] .wheel-movie-list {
     0% {
         background-position: 200% 0;
     }
+
     100% {
         background-position: -200% 0;
     }
@@ -472,18 +372,19 @@ body[data-page="wheel"] .wheel-movie-list {
 
 .wheel-stage {
     position: relative;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: min(100%, 75vh);
     aspect-ratio: 1 / 1;
-    width: min(100%, 88vh);
-    min-height: 0;
-    max-width: 100%;
-    max-height: 88vh;
     margin: 0 auto;
     padding: 6px;
     border-radius: 28px;
     background: radial-gradient(circle at center, rgba(248, 250, 252, 0.06), rgba(2, 6, 23, 0.45));
     overflow: hidden;
+    align-self: start;
+    box-sizing: border-box;
 }
 
 .wheel-stage::before {
@@ -499,17 +400,21 @@ body[data-page="wheel"] .wheel-movie-list {
     position: relative;
     z-index: 1;
     width: 100%;
-    height: 100%;
+    height: auto;
     aspect-ratio: 1 / 1;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
     filter: drop-shadow(0 30px 50px rgba(0, 0, 0, 0.5));
     will-change: transform;
     transform: translateZ(0);
     image-rendering: auto;
+    display: block;
 }
 
 .wheel-pointer {
     position: absolute;
-    top: 2px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     transform-origin: 50% 0%;
@@ -558,6 +463,420 @@ body[data-page="wheel"] .wheel-movie-list {
     color: #f8fafc;
     letter-spacing: 0.06em;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+/* ── Одноэкранная вёрстка на ПК (все страницы помещаются в экран без скролла) ── */
+@media (min-width: 921px) {
+    body[data-page="wheel"],
+    body[data-page="movies"],
+    body[data-page="add"],
+    body[data-page="rating"] {
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    body[data-page="wheel"] .site-header,
+    body[data-page="movies"] .site-header,
+    body[data-page="add"] .site-header,
+    body[data-page="rating"] .site-header {
+        padding: 10px 0 6px;
+    }
+
+    body[data-page="wheel"] .page-shell,
+    body[data-page="movies"] .page-shell,
+    body[data-page="add"] .page-shell,
+    body[data-page="rating"] .page-shell {
+        height: calc(100dvh - 66px);
+        padding: 0 0 10px;
+        gap: 8px;
+        min-height: 0;
+    }
+
+    /* ── Колесо (index.html) ── */
+    body[data-page="wheel"] .page-shell {
+        display: grid;
+        grid-template-rows: auto 1fr;
+    }
+
+    body[data-page="wheel"] .hero-card {
+        padding: 8px 20px;
+        min-height: 0;
+    }
+
+    body[data-page="wheel"] .hero-card .eyebrow {
+        margin: 0 0 1px;
+        font-size: 0.7rem;
+    }
+
+    body[data-page="wheel"] .hero-card h1 {
+        font-size: clamp(1.15rem, 1.6vw, 1.4rem);
+        line-height: 1.15;
+    }
+
+    body[data-page="wheel"] .hero-card .lead {
+        margin: 2px 0 0;
+        font-size: 0.82rem;
+        line-height: 1.3;
+        max-width: 90ch;
+    }
+
+    body[data-page="wheel"] .wheel-panel {
+        height: 100%;
+        min-height: 0;
+        padding: 12px 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    body[data-page="wheel"] .wheel-panel-inner {
+        display: grid;
+        grid-template-columns: 280px 1fr 310px;
+        gap: 20px;
+        align-items: center;
+        height: 100%;
+        min-height: 0;
+        width: 100%;
+    }
+
+    body[data-page="wheel"] .wheel-list-panel {
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 0;
+    }
+
+    body[data-page="wheel"] .wheel-movie-list {
+        flex: 1 1 0;
+        min-height: 0;
+        height: 100%;
+        max-height: none;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    body[data-page="wheel"] .wheel-stage {
+        height: 100%;
+        width: 100%;
+        max-height: 100%;
+        max-width: 100%;
+        aspect-ratio: 1 / 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        padding: 4px;
+        align-self: center;
+    }
+
+    body[data-page="wheel"] #wheelCanvas {
+        height: 100%;
+        width: auto;
+        max-height: 100%;
+        max-width: 100%;
+        aspect-ratio: 1 / 1;
+        object-fit: contain;
+        display: block;
+    }
+
+    body[data-page="wheel"] .wheel-sidebar {
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    body[data-page="wheel"] .wheel-sidebar h2 {
+        font-size: 1.15rem;
+    }
+
+    body[data-page="wheel"] #wheelHint {
+        font-size: 0.82rem;
+        line-height: 1.3;
+        margin: 0;
+    }
+
+    body[data-page="wheel"] .wheel-setting {
+        padding: 6px 10px;
+        gap: 6px;
+    }
+
+    body[data-page="wheel"] .wheel-setting span {
+        font-size: 0.82rem;
+    }
+
+    body[data-page="wheel"] .mode-btn {
+        min-height: 32px;
+        padding: 4px 10px;
+        font-size: 0.82rem;
+    }
+
+    body[data-page="wheel"] #spinBtn {
+        min-height: 42px;
+        font-size: 0.95rem;
+    }
+
+    /* ── Фильмы (movies.html) ── */
+    body[data-page="movies"] .page-shell {
+        display: flex;
+        flex-direction: column;
+        height: calc(100dvh - 66px);
+        padding: 0 0 8px;
+        gap: 6px;
+        min-height: 0;
+    }
+
+    body[data-page="movies"] .movies-panel {
+        flex: 1 1 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 10px 18px;
+        overflow: hidden;
+        gap: 6px;
+    }
+
+    body[data-page="movies"] .section-title {
+        margin-bottom: 2px;
+        flex-shrink: 0;
+    }
+
+    body[data-page="movies"] .search-row {
+        margin-bottom: 4px;
+        flex-shrink: 0;
+    }
+
+    body[data-page="movies"] .search-field span {
+        font-size: 0.8rem;
+    }
+
+    body[data-page="movies"] .search-field input {
+        min-height: 36px;
+        padding: 6px 12px;
+        font-size: 0.88rem;
+    }
+
+    body[data-page="movies"] .search-row .secondary-button {
+        min-height: 36px;
+        padding: 0 14px;
+        font-size: 0.84rem;
+    }
+
+    body[data-page="movies"] .table-wrap {
+        flex: 1 1 0;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        border-radius: 14px;
+    }
+
+    body[data-page="movies"] table {
+        table-layout: fixed;
+        width: 100%;
+        min-width: 0;
+    }
+
+    body[data-page="movies"] th.col-title,
+    body[data-page="movies"] td.col-title {
+        width: 28%;
+    }
+
+    body[data-page="movies"] th.col-genre,
+    body[data-page="movies"] td.col-genre {
+        width: 21%;
+    }
+
+    body[data-page="movies"] th.col-comment,
+    body[data-page="movies"] td.col-comment {
+        width: 23%;
+    }
+
+    body[data-page="movies"] th.col-status,
+    body[data-page="movies"] td.col-status {
+        width: 14%;
+        text-align: center;
+    }
+
+    body[data-page="movies"] th.col-rating,
+    body[data-page="movies"] td.col-rating {
+        width: 7%;
+        text-align: center;
+    }
+
+    body[data-page="movies"] th.col-actions,
+    body[data-page="movies"] td.col-actions {
+        width: 7%;
+        text-align: right;
+    }
+
+    body[data-page="movies"] table th {
+        padding: 7px 10px;
+        font-size: 0.82rem;
+    }
+
+    body[data-page="movies"] table td {
+        padding: 4px 10px;
+        font-size: 0.85rem;
+        height: 34px;
+    }
+
+    body[data-page="movies"] .pagination-bar {
+        flex-shrink: 0;
+        margin-top: auto;
+        padding-top: 4px;
+    }
+
+    body[data-page="movies"] .page-btn {
+        min-height: 30px;
+        padding: 0 10px;
+        font-size: 0.82rem;
+    }
+
+    body[data-page="movies"] .page-number-btn {
+        min-width: 30px;
+        height: 30px;
+        font-size: 0.82rem;
+    }
+
+    /* ── Добавить фильм (add.html: 2 блока - форма слева, файл справа) ── */
+    body[data-page="add"] .page-shell {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        max-width: 960px;
+        margin: 0 auto;
+        width: 100%;
+        padding: 12px 16px;
+    }
+
+    body[data-page="add"] .add-panel-split {
+        width: 100%;
+        max-width: 920px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(280px, 330px);
+        gap: 20px;
+        padding: 20px 24px;
+        align-items: start;
+        height: auto;
+        min-height: 0;
+        margin: auto 0;
+    }
+
+    body[data-page="add"] .add-form-col {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    body[data-page="add"] .add-form-col .movie-form {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-width: none;
+    }
+
+    body[data-page="add"] .add-form-col .movie-form label {
+        display: grid;
+        gap: 3px;
+    }
+
+    body[data-page="add"] .add-form-col .movie-form input,
+    body[data-page="add"] .add-form-col .movie-form select {
+        padding: 8px 12px;
+        min-height: 36px;
+    }
+
+    body[data-page="add"] .add-form-col .movie-form textarea {
+        padding: 8px 12px;
+        min-height: 56px;
+        height: 56px;
+        resize: vertical;
+    }
+
+    body[data-page="add"] .add-import-col {
+        background: rgba(2, 6, 23, 0.4);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 18px;
+        padding: 16px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: none;
+        height: auto;
+    }
+
+    /* ── Оценка (rating.html: компактная вёрстка в 2 колонки) ── */
+    body[data-page="rating"] .page-shell {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        max-width: 1040px;
+        margin: 0 auto;
+        width: 100%;
+        padding: 12px 16px;
+    }
+
+    body[data-page="rating"] .rating-panel {
+        width: 100%;
+        max-width: 1000px;
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        height: auto;
+        min-height: 0;
+        margin: auto 0;
+    }
+
+    body[data-page="rating"] .rating-panel-split {
+        display: grid;
+        grid-template-columns: 1fr 1.05fr;
+        gap: 24px;
+        align-items: start;
+        width: 100%;
+    }
+
+    body[data-page="rating"] .rating-col-left,
+    body[data-page="rating"] .rating-col-right {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    body[data-page="rating"] .rating-col-left .selected-movie {
+        min-height: 110px;
+    }
+
+    body[data-page="rating"] .quick-rating-wrap {
+        gap: 6px;
+    }
+
+    body[data-page="rating"] .quick-rate-btn {
+        min-width: 34px;
+        height: 34px;
+        padding: 0 8px;
+        font-size: 0.84rem;
+    }
+
+    body[data-page="rating"] .multi-rating-container {
+        padding: 10px 12px;
+        gap: 6px;
+    }
+
+    body[data-page="rating"] .multi-rating-container input,
+    body[data-page="rating"] .final-rating-block input {
+        min-height: 38px;
+        padding: 8px 12px;
+    }
 }
 
 /* ── Всплывающее модальное окно победителя (ПК и мобильные) ────────── */
@@ -695,13 +1014,25 @@ body[data-page="wheel"] .wheel-movie-list {
 }
 
 @keyframes overlayFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes cardPopIn {
-    from { opacity: 0; transform: scale(0.86) translateY(16px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+    from {
+        opacity: 0;
+        transform: scale(0.86) translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .hub-image-controls {
@@ -979,7 +1310,8 @@ body[data-page="wheel"] .wheel-movie-list {
 
 
 .wheel-settings-toggle-btn {
-    display: none; /* скрыта на широких десктопах, открыта на мобильных */
+    display: none;
+    /* скрыта на широких десктопах, открыта на мобильных */
     align-items: center;
     gap: 6px;
     padding: 7px 14px;
@@ -1117,7 +1449,6 @@ body[data-page="wheel"] .wheel-movie-list {
 table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 760px;
     border-radius: 20px;
     overflow: hidden;
     background: rgba(15, 23, 42, 0.72);
@@ -1125,77 +1456,10 @@ table {
 
 table th,
 table td {
-    padding: 14px 16px;
+    padding: 8px 12px;
     text-align: left;
     vertical-align: middle;
     border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-}
-
-table th.sortable {
-    cursor: pointer;
-    user-select: none;
-    transition: background 0.15s ease, color 0.15s ease;
-}
-
-table th.sortable:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--accent-2);
-}
-
-table th.sortable:focus-visible {
-    outline: 2px solid var(--accent-2);
-    outline-offset: -2px;
-}
-
-.th-content {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.sort-icon {
-    display: inline-block;
-    font-size: 0.85rem;
-    opacity: 0.35;
-    transition: opacity 0.15s ease, color 0.15s ease, transform 0.15s ease;
-}
-
-table th.sortable:hover .sort-icon {
-    opacity: 0.75;
-}
-
-table th.sortable.active-sort {
-    color: var(--accent-2);
-}
-
-table th.sortable.active-sort .sort-icon {
-    opacity: 1;
-    color: var(--accent-2);
-    font-weight: bold;
-}
-
-.row-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.action-btn {
-    min-height: 38px;
-    padding: 0 14px;
-    border-radius: 999px;
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    color: var(--text);
-    background: rgba(2, 6, 23, 0.28);
-    cursor: pointer;
-}
-
-.action-btn-edit {
-    background: rgba(56, 189, 248, 0.16);
-}
-
-.action-btn-delete {
-    background: rgba(248, 113, 113, 0.18);
 }
 
 .primary-button,
@@ -1366,16 +1630,20 @@ table th.sortable.active-sort .sort-icon {
 .nav-auth-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    padding: 8px 14px;
+    min-height: 42px;
+    padding: 0 16px;
     border-radius: 999px;
     border: 1px solid rgba(148, 163, 184, 0.22);
-    background: rgba(2, 6, 23, 0.35);
+    background: rgba(2, 6, 23, 0.45);
     color: var(--text);
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     font-weight: 600;
+    line-height: 1;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, color 0.15s ease;
+    box-sizing: border-box;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .nav-auth-btn:hover {
@@ -1506,23 +1774,231 @@ table tr:last-child td {
 .movie-form {
     display: grid;
     gap: 16px;
-    max-width: 720px;
+    max-width: 860px;
 }
 
 .form-panel {
     display: grid;
-    gap: 18px;
+    gap: 20px;
+}
+
+.add-panel-split {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 24px;
+    align-items: start;
+}
+
+.add-form-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.add-import-col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.add-badge,
+.rating-badge-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent-2);
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+/* ── Dropzone & CSV импорт ────────────────────────────────────────── */
+.file-dropzone {
+    border: 2px dashed rgba(56, 189, 248, 0.35);
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 14px;
+    padding: 18px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    position: relative;
+    outline: none;
+}
+
+.file-dropzone:hover,
+.file-dropzone:focus-visible {
+    border-color: var(--accent-2, #38bdf8);
+    background: rgba(56, 189, 248, 0.08);
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+}
+
+.file-dropzone.dragover {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.16);
+    box-shadow: 0 0 28px rgba(56, 189, 248, 0.35);
+    transform: scale(1.02);
+}
+
+.file-dropzone.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.dropzone-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    pointer-events: none;
+}
+
+.dropzone-icon {
+    font-size: 2rem;
+    line-height: 1;
+    margin-bottom: 2px;
+    transition: transform 0.2s ease;
+    filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.4));
+}
+
+.file-dropzone.dragover .dropzone-icon {
+    transform: scale(1.2) translateY(-4px);
+}
+
+.dropzone-main-text {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0;
+}
+
+.dropzone-sub-text {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin: 0;
+}
+
+.dropzone-link {
+    color: var(--accent-2, #38bdf8);
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+.dropzone-tag {
+    font-size: 0.7rem;
+    color: #64748b;
+    background: rgba(148, 163, 184, 0.1);
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-top: 4px;
+}
+
+.import-instructions {
+    background: rgba(15, 23, 42, 0.3);
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+
+.import-instructions .import-description {
+    font-size: 0.78rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.import-instructions code {
+    background: rgba(56, 189, 248, 0.12);
+    color: #7dd3fc;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-size: 0.76rem;
+}
+
+.csv-status-box {
+    font-size: 0.82rem;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-top: auto;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.csv-status-box.status-info {
+    background: rgba(56, 189, 248, 0.12);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.csv-status-box.status-success {
+    background: rgba(74, 222, 128, 0.12);
+    color: #4ade80;
+    border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.csv-status-box.status-warning {
+    background: rgba(251, 191, 36, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.csv-status-box.status-error {
+    background: rgba(248, 113, 113, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.rating-panel-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.rating-col-left,
+.rating-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.final-rating-block {
+    display: grid;
+    gap: 6px;
+}
+
+.final-rating-block label {
+    display: grid;
+    gap: 6px;
+    color: rgba(226, 232, 240, 0.92);
+}
+
+.final-rating-block span {
+    font-size: 0.95rem;
+    color: rgba(226, 232, 240, 0.8);
+}
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 6px;
+    flex-wrap: wrap;
 }
 
 .import-card {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     gap: 16px;
-    padding: 18px;
-    border-radius: 22px;
+    padding: 20px 22px;
+    border-radius: 18px;
     border: 1px solid rgba(148, 163, 184, 0.14);
     background: rgba(2, 6, 23, 0.28);
+    max-width: 860px;
+    box-sizing: border-box;
 }
 
 .file-input {
@@ -1719,7 +2195,7 @@ textarea {
     flex: 1;
     padding: 8px 12px;
     border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     background: transparent;
     color: #cbd5e1;
     cursor: pointer;
@@ -1817,57 +2293,7 @@ code {
     font-family: 'Courier New', monospace;
 }
 
-/* ── Стили страницы фильмов (movies.html): компактность и пагинация ─── */
-body[data-page="movies"] .page-shell {
-    width: min(calc(100% - 48px), 1480px);
-    margin: 0 auto;
-    padding: 8px 0 24px;
-    gap: 12px;
-}
-
-body[data-page="movies"] .hero-card {
-    padding: 12px 22px;
-    border-radius: 16px;
-}
-
-body[data-page="movies"] .hero-card .eyebrow {
-    margin: 0 0 2px;
-    font-size: 0.72rem;
-    letter-spacing: 0.18em;
-}
-
-body[data-page="movies"] .hero-card h1 {
-    font-size: clamp(1.2rem, 1.8vw, 1.55rem);
-    line-height: 1.15;
-    max-width: none;
-    font-weight: 800;
-}
-
-body[data-page="movies"] .hero-card .lead {
-    margin: 3px 0 0;
-    font-size: 0.88rem;
-    line-height: 1.35;
-    max-width: 90ch;
-    color: rgba(226, 232, 240, 0.78);
-}
-
-body[data-page="movies"] .panel {
-    padding: 16px 22px;
-    border-radius: 20px;
-}
-
-body[data-page="movies"] .section-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 10px;
-}
-
-body[data-page="movies"] .section-title h2 {
-    font-size: 1.25rem;
-}
-
+/* ── Стили каталога фильмов (movies.html) ────────────────────────────── */
 .movies-count-badge {
     display: inline-block;
     padding: 3px 10px;
@@ -1879,65 +2305,95 @@ body[data-page="movies"] .section-title h2 {
     border: 1px solid rgba(56, 189, 248, 0.25);
 }
 
-body[data-page="movies"] .search-row {
-    margin-bottom: 12px;
-    gap: 10px;
+.search-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 14px;
 }
 
-body[data-page="movies"] .search-field {
-    gap: 4px;
+.search-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
 }
 
-body[data-page="movies"] .search-field span {
-    font-size: 0.82rem;
+.search-field span {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--text);
 }
 
-body[data-page="movies"] .search-field input {
-    min-height: 38px;
-    padding: 6px 14px;
-    font-size: 0.9rem;
+.search-field input {
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 14px;
+    font-size: 0.92rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(15, 23, 42, 0.7);
+    color: var(--text);
 }
 
-body[data-page="movies"] .search-row .secondary-button {
-    min-height: 38px;
-    padding: 0 16px;
+.search-row .secondary-button {
+    min-height: 42px;
+    padding: 0 18px;
     font-size: 0.88rem;
 }
 
-body[data-page="movies"] table th,
-body[data-page="movies"] table td {
-    padding: 9px 12px;
-    font-size: 0.9rem;
-    line-height: 1.35;
+table th,
+table td {
+    padding: 8px 12px;
+    font-size: 0.88rem;
+    line-height: 1.3;
+    vertical-align: middle;
 }
 
-body[data-page="movies"] .comment-cell {
+.cell-truncate {
+    display: block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.comment-cell {
     max-width: 260px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-body[data-page="movies"] .action-btn {
-    min-height: 34px;
-    width: 36px;
-    height: 36px;
+.row-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    flex-wrap: nowrap;
+}
+
+.action-btn {
+    min-height: 28px;
+    width: 28px;
+    height: 28px;
     padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.05rem;
+    font-size: 0.9rem;
     line-height: 1;
-    border-radius: 10px;
+    border-radius: 8px;
+    flex-shrink: 0;
     transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-body[data-page="movies"] .action-btn:hover {
+.action-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
-body[data-page="movies"] .action-btn:active {
+.action-btn:active {
     transform: translateY(1px);
 }
 
@@ -2101,6 +2557,7 @@ body[data-page="movies"] .action-btn:active {
     border-color: rgba(239, 68, 68, 0.35);
     background: rgba(239, 68, 68, 0.1);
 }
+
 .quick-rate-btn.btn-terrible:hover,
 .quick-rate-btn.btn-terrible.active {
     background: rgba(239, 68, 68, 0.25);
@@ -2114,6 +2571,7 @@ body[data-page="movies"] .action-btn:active {
     border-color: rgba(239, 68, 68, 0.3);
     background: rgba(239, 68, 68, 0.1);
 }
+
 .quick-rate-btn.btn-red:hover,
 .quick-rate-btn.btn-red.active {
     background: rgba(239, 68, 68, 0.3);
@@ -2127,6 +2585,7 @@ body[data-page="movies"] .action-btn:active {
     border-color: rgba(34, 197, 94, 0.3);
     background: rgba(34, 197, 94, 0.1);
 }
+
 .quick-rate-btn.btn-green:hover,
 .quick-rate-btn.btn-green.active {
     background: rgba(34, 197, 94, 0.3);
@@ -2140,6 +2599,7 @@ body[data-page="movies"] .action-btn:active {
     border-color: rgba(56, 189, 248, 0.35);
     background: rgba(56, 189, 248, 0.1);
 }
+
 .quick-rate-btn.btn-awesome:hover,
 .quick-rate-btn.btn-awesome.active {
     background: linear-gradient(135deg, rgba(74, 222, 128, 0.25), rgba(56, 189, 248, 0.35));
@@ -2317,22 +2777,21 @@ body[data-page="movies"] .action-btn:active {
 
 /* ── Планшеты и узкие экраны (<= 1024px) ────────────────────────────── */
 @media (max-width: 1024px) {
-    body[data-page="wheel"] .page-shell,
-    body[data-page="wheel"] .site-header {
+
+    .page-shell,
+    .site-header {
         width: min(calc(100% - 32px), 100%);
     }
 
-    body[data-page="wheel"] .wheel-panel-inner {
-        grid-template-columns: 280px 1fr 300px;
+    .wheel-panel-inner {
+        grid-template-columns: 270px 1fr 290px;
         gap: 16px;
     }
 }
 
 /* ── Мобильные устройства и планшеты портретной ориентации (<= 920px) ── */
 @media (max-width: 920px) {
-    .site-header,
-    body[data-page="wheel"] .site-header,
-    body[data-page="movies"] .site-header {
+    .site-header {
         flex-direction: column;
         align-items: stretch;
         gap: 12px;
@@ -2348,7 +2807,7 @@ body[data-page="movies"] .action-btn:active {
 
     .brand-note {
         margin: 2px 0 0;
-        font-size: 0.8rem;
+        font-size: 0.82rem;
     }
 
     .site-nav {
@@ -2365,54 +2824,46 @@ body[data-page="movies"] .action-btn:active {
         display: none;
     }
 
-    .nav-link {
+    .nav-link,
+    .nav-auth-btn {
         flex: 1 1 auto;
         text-align: center;
         white-space: nowrap;
-        padding: 9px 12px;
+        padding: 0 12px;
         min-height: 40px;
         font-size: 0.88rem;
     }
 
-    .page-shell,
-    body[data-page="wheel"] .page-shell,
-    body[data-page="movies"] .page-shell {
+    .page-shell {
         width: min(calc(100% - 20px), 100%);
         margin: 0 auto;
         padding: 6px 0 28px;
         gap: 12px;
     }
 
-    .hero-card,
-    body[data-page="wheel"] .hero-card,
-    body[data-page="movies"] .hero-card {
-        padding: 14px 16px;
+    .hero-card {
+        padding: 14px 18px;
         border-radius: 18px;
     }
 
-    .hero-card h1,
-    body[data-page="wheel"] .hero-card h1,
-    body[data-page="movies"] .hero-card h1 {
+    .hero-card h1 {
         font-size: clamp(1.25rem, 5vw, 1.6rem);
         line-height: 1.2;
     }
 
-    .hero-card .lead,
-    body[data-page="wheel"] .hero-card .lead,
-    body[data-page="movies"] .hero-card .lead {
+    .hero-card .lead {
         font-size: 0.86rem;
         line-height: 1.4;
     }
 
     .panel,
-    body[data-page="wheel"] .wheel-panel,
-    body[data-page="movies"] .panel {
+    .wheel-panel {
         padding: 16px 14px;
         border-radius: 20px;
     }
 
     /* ── Колесо на мобильных ── */
-    body[data-page="wheel"] .wheel-panel-inner {
+    .wheel-panel-inner {
         display: flex;
         flex-direction: column;
         gap: 16px;
@@ -2424,11 +2875,11 @@ body[data-page="movies"] .action-btn:active {
     }
 
     /* ── На мобильных круглое колесо заменяется на компактный слот-барабан ── */
-    body[data-page="wheel"] .wheel-stage {
+    .wheel-stage {
         display: none !important;
     }
 
-    body[data-page="wheel"] .mobile-drum-stage {
+    .mobile-drum-stage {
         display: flex !important;
         flex-direction: column;
         align-items: center;
@@ -2440,7 +2891,7 @@ body[data-page="movies"] .action-btn:active {
         margin: 0 0 6px;
     }
 
-    body[data-page="wheel"] .wheel-sidebar {
+    .wheel-sidebar {
         order: 2;
         width: 100%;
         max-width: 100%;
@@ -2449,117 +2900,118 @@ body[data-page="movies"] .action-btn:active {
         gap: 10px;
     }
 
-    body[data-page="wheel"] .desktop-settings-slot {
+    .desktop-settings-slot {
         display: none !important;
     }
 
-    body[data-page="wheel"] .wheel-settings-toggle-btn {
+    .wheel-settings-toggle-btn {
         display: inline-flex;
     }
 
-    body[data-page="wheel"] .wheel-sidebar h2 {
+    .wheel-sidebar h2 {
         font-size: 1.15rem;
     }
 
-    body[data-page="wheel"] #wheelHint {
+    #wheelHint {
         font-size: 0.84rem;
         margin: 0;
         line-height: 1.35;
     }
 
-    body[data-page="wheel"] .wheel-actions-area {
+    .wheel-actions-area {
         display: flex;
         flex-direction: column;
         gap: 8px;
     }
 
-    body[data-page="wheel"] #spinBtn {
+    #spinBtn {
         width: 100%;
         min-height: 48px;
         font-size: 1.05rem;
         border-radius: 999px;
     }
 
-    body[data-page="wheel"] #resetWheelBtn,
-    body[data-page="wheel"] #startWatchBtn {
+    #resetWheelBtn,
+    #startWatchBtn {
         width: 100%;
         min-height: 44px;
         justify-content: center;
     }
 
-    body[data-page="wheel"] .result-card {
+    .result-card {
         padding: 12px 14px;
         min-height: auto;
     }
 
-    body[data-page="wheel"] .wheel-list-panel {
+    .wheel-list-panel {
         order: 3;
         width: 100%;
         margin-top: 4px;
     }
 
-    body[data-page="wheel"] .wheel-movie-list {
+    .wheel-movie-list {
         max-height: 220px;
         gap: 6px;
     }
 
-    body[data-page="wheel"] .wheel-movie-item {
+    .wheel-movie-item {
         padding: 9px 10px;
         gap: 8px;
         border-radius: 12px;
     }
 
-    body[data-page="wheel"] .wheel-index {
+    .wheel-index {
         width: 26px;
         height: 26px;
         font-size: 0.8rem;
     }
 
     /* ── Каталог фильмов на мобильных ── */
-    body[data-page="movies"] .search-row {
+    .search-row {
         flex-direction: column;
         align-items: stretch;
         gap: 8px;
     }
 
-    body[data-page="movies"] .search-field {
+    .search-field {
         width: 100%;
         flex: none;
     }
 
-    body[data-page="movies"] .search-field input {
+    .search-field input {
         min-height: 42px;
-        font-size: 16px; /* Предотвращает авто-зум в iOS Safari */
+        font-size: 16px;
+        /* Предотвращает авто-зум в iOS Safari */
     }
 
-    body[data-page="movies"] .search-row .secondary-button {
+    .search-row .secondary-button {
         width: 100%;
         min-height: 40px;
         font-size: 0.9rem;
     }
 
     /* Скрытие всех колонок, кроме Названия и Статуса на мобильных экранах */
-    body[data-page="movies"] .col-genre,
-    body[data-page="movies"] .col-comment,
-    body[data-page="movies"] .col-rating,
-    body[data-page="movies"] .col-actions {
+    .col-genre,
+    .col-comment,
+    .col-rating,
+    .col-actions {
         display: none !important;
     }
 
-    body[data-page="movies"] .table-wrap {
+    .table-wrap {
         overflow-x: hidden;
         border-radius: 14px;
         margin: 4px 0 10px;
     }
 
-    body[data-page="movies"] table {
+    table {
         min-width: 0 !important;
         width: 100% !important;
         table-layout: fixed;
     }
 
-    body[data-page="movies"] th.col-title,
-    body[data-page="movies"] td.col-title {
+    th.col-title,
+    td.col-title {
         width: 62%;
         padding: 10px 10px;
         font-size: 0.88rem;
@@ -2567,8 +3019,8 @@ body[data-page="movies"] .action-btn:active {
         vertical-align: middle;
     }
 
-    body[data-page="movies"] th.col-status,
-    body[data-page="movies"] td.col-status {
+    th.col-status,
+    td.col-status {
         width: 38%;
         padding: 10px 10px;
         font-size: 0.82rem;
@@ -2576,7 +3028,7 @@ body[data-page="movies"] .action-btn:active {
         vertical-align: middle;
     }
 
-    body[data-page="movies"] .movie-title-text {
+    .movie-title-text {
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
@@ -2585,7 +3037,7 @@ body[data-page="movies"] .action-btn:active {
         line-height: 1.35;
     }
 
-    body[data-page="movies"] .status-pill {
+    .status-pill {
         display: inline-block;
         max-width: 100%;
         white-space: nowrap;
@@ -2595,12 +3047,12 @@ body[data-page="movies"] .action-btn:active {
         font-size: 0.76rem;
     }
 
-    body[data-page="movies"] .movie-table-row {
+    .movie-table-row {
         cursor: pointer;
         transition: background 0.15s ease;
     }
 
-    body[data-page="movies"] .movie-table-row:active {
+    .movie-table-row:active {
         background: rgba(56, 189, 248, 0.12);
     }
 
@@ -2660,6 +3112,16 @@ body[data-page="movies"] .action-btn:active {
     }
 
     /* ── Формы добавления и оценки на мобильных ── */
+    .add-panel-split {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .rating-panel-split {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
     .import-card {
         flex-direction: column;
         align-items: stretch;
@@ -2674,7 +3136,8 @@ body[data-page="movies"] .action-btn:active {
         min-width: 0;
     }
 
-    .file-input {
+    .file-input,
+    .file-input-btn {
         width: 100%;
         min-width: 0;
     }
@@ -2687,7 +3150,8 @@ body[data-page="movies"] .action-btn:active {
     .movie-form input,
     .movie-form select,
     .movie-form textarea {
-        font-size: 16px; /* Предотвращает авто-зум в iOS Safari */
+        font-size: 16px;
+        /* Предотвращает авто-зум в iOS Safari */
         min-height: 42px;
     }
 
@@ -2708,32 +3172,28 @@ body[data-page="movies"] .action-btn:active {
 
 /* ── Смартфоны с компактным экраном (<= 480px) ───────────────────────── */
 @media (max-width: 480px) {
-    .site-header,
-    body[data-page="wheel"] .site-header,
-    body[data-page="movies"] .site-header {
+    .site-header {
         padding: 10px 12px;
         border-radius: 16px;
+        width: calc(100% - 16px);
     }
 
-    .page-shell,
-    body[data-page="wheel"] .page-shell,
-    body[data-page="movies"] .page-shell {
+    .page-shell {
         width: calc(100% - 16px);
         padding: 4px 0 24px;
     }
 
     .panel,
-    body[data-page="wheel"] .wheel-panel,
-    body[data-page="movies"] .panel {
+    .wheel-panel {
         padding: 14px 12px;
         border-radius: 18px;
     }
 
-    body[data-page="wheel"] .wheel-stage {
+    .wheel-stage {
         display: none !important;
     }
 
-    body[data-page="wheel"] .mobile-drum-stage {
+    .mobile-drum-stage {
         display: flex !important;
         width: 100%;
         max-width: 100%;
@@ -2766,6 +3226,7 @@ body[data-page="movies"] .action-btn:active {
 
 /* ── Сенсорные устройства (Touch) ───────────────────────────────────── */
 @media (pointer: coarse) {
+
     button,
     .action-btn,
     .nav-link,
@@ -2779,5 +3240,3 @@ body[data-page="movies"] .action-btn:active {
         -webkit-tap-highlight-color: transparent;
     }
 }
-
-

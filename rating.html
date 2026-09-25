@@ -1,9 +1,17 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" style="background-color: #050816; color-scheme: dark;">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#050816">
+    <style>
+        html, body {
+            background-color: #050816 !important;
+            color-scheme: dark;
+        }
+    </style>
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://ribxwepxmiywgyrkzjlp.supabase.co https://*.supabase.co; font-src 'self' data: https:; object-src 'none'; base-uri 'self'; form-action 'self';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -13,9 +21,9 @@
 
 <body data-page="rating">
     <header class="site-header">
-        <div>
+        <div class="brand-block">
             <a class="brand" href="index.html">Qeqoqeq кино</a>
-            <p class="brand-note">Фиксация впечатлений</p>
+            <p class="brand-note">Выбирайте, смотрите, оценивайте</p>
         </div>
         <nav class="site-nav" aria-label="Основная навигация">
             <a class="nav-link" href="index.html">Колесо</a>
@@ -26,74 +34,89 @@
     </header>
 
     <main class="page-shell">
-        <section class="hero-card compact">
-            <p class="eyebrow">Оценивание</p>
-            <h1>Оцените выбранный фильм</h1>
-            <p class="lead">Сначала крутите колесо, потом поставьте оценку и сохраните её в историю фильма.</p>
-        </section>
-
-        <section class="panel form-panel">
+        <section class="panel rating-panel">
             <div id="ratingMovieEmpty" class="empty-state hidden">
                 Сначала выберите фильм на странице колеса.
             </div>
-            <form id="ratingForm" class="movie-form">
-                <div class="movie-search-wrapper">
-                    <label for="ratingMovieSearchInput">
-                        <span>Поиск фильма по названию</span>
-                    </label>
-                    <div class="search-input-box">
-                        <span class="search-input-icon">🔍</span>
-                        <input type="text" id="ratingMovieSearchInput" placeholder="Начните вводить название фильма..." autocomplete="off">
-                        <button type="button" id="clearMovieSearchBtn" class="clear-search-btn hidden" title="Очистить" aria-label="Очистить поиск">✕</button>
+            <form id="ratingForm" class="rating-panel-split">
+                <!-- Левая колонка: Поиск и карточка выбранного фильма -->
+                <div class="rating-col-left">
+                    <div class="section-title compact-title">
+                        <h2>Выбор фильма</h2>
+                        <span class="muted rating-badge-pill">Поиск</span>
                     </div>
-                    <input type="hidden" id="ratingMovieId">
-                    <div id="movieSearchResults" class="movie-search-results hidden" role="listbox"></div>
-                </div>
-                <div id="ratingMovieTitle" class="selected-movie"></div>
 
-                <!-- Быстрый выбор оценки -->
-                <div class="quick-rating-wrap">
-                    <span>Быстрый выбор оценки:</span>
-                    <div class="quick-rating-buttons">
-                        <button type="button" class="quick-rate-btn btn-terrible" data-rate="-1" title="-1 (хуйня)">-1 хуйня</button>
-                        <button type="button" class="quick-rate-btn btn-red" data-rate="1">1</button>
-                        <button type="button" class="quick-rate-btn btn-red" data-rate="2">2</button>
-                        <button type="button" class="quick-rate-btn btn-red" data-rate="3">3</button>
-                        <button type="button" class="quick-rate-btn btn-red" data-rate="4">4</button>
-                        <button type="button" class="quick-rate-btn btn-red" data-rate="5">5</button>
-                        <button type="button" class="quick-rate-btn btn-green" data-rate="6">6</button>
-                        <button type="button" class="quick-rate-btn btn-green" data-rate="7">7</button>
-                        <button type="button" class="quick-rate-btn btn-green" data-rate="8">8</button>
-                        <button type="button" class="quick-rate-btn btn-green" data-rate="9">9</button>
-                        <button type="button" class="quick-rate-btn btn-green" data-rate="10">10</button>
-                        <button type="button" class="quick-rate-btn btn-awesome" data-rate="11" title="11 (охуенный)">11 охуенный</button>
+                    <div class="movie-search-wrapper">
+                        <label for="ratingMovieSearchInput">
+                            <span>Название фильма:</span>
+                        </label>
+                        <div class="search-input-box">
+                            <span class="search-input-icon">🔍</span>
+                            <input type="text" id="ratingMovieSearchInput" placeholder="Начните вводить название фильма..." autocomplete="off">
+                            <button type="button" id="clearMovieSearchBtn" class="clear-search-btn hidden" title="Очистить" aria-label="Очистить поиск">✕</button>
+                        </div>
+                        <input type="hidden" id="ratingMovieId">
+                        <div id="movieSearchResults" class="movie-search-results hidden" role="listbox"></div>
+                    </div>
+
+                    <div id="ratingMovieTitle" class="selected-movie"></div>
+
+                    <div class="form-actions">
+                        <button id="saveRatingBtn" type="button">Сохранить оценку</button>
+                        <a class="secondary-link" href="index.html">Вернуться к колесу</a>
                     </div>
                 </div>
 
-                <!-- Блок нескольких оценок участников киноклуба -->
-                <div class="multi-rating-container">
-                    <div class="multi-rating-header">
-                        <span class="multi-rating-title">👥 Оценки нескольких участников (расчет среднего)</span>
+                <!-- Правая колонка: Выставление оценки -->
+                <div class="rating-col-right">
+                    <div class="section-title compact-title">
+                        <h2>Оценка фильма</h2>
+                        <span class="muted rating-badge-pill">Баллы</span>
                     </div>
-                    <label>
-                        <span>Введите оценки участников через запятую или пробел:</span>
-                        <input type="text" id="multiRatingInput" placeholder="Например: 7, 8, 9, 10 или 5 8 9">
-                    </label>
-                    <div id="multiRatingCalcInfo" class="multi-rating-calc-info hidden"></div>
+
+                    <!-- Быстрый выбор оценки -->
+                    <div class="quick-rating-wrap">
+                        <span>Быстрый выбор оценки:</span>
+                        <div class="quick-rating-buttons">
+                            <button type="button" class="quick-rate-btn btn-terrible" data-rate="-1" title="-1 (хуйня)">-1 хуйня</button>
+                            <button type="button" class="quick-rate-btn btn-red" data-rate="1">1</button>
+                            <button type="button" class="quick-rate-btn btn-red" data-rate="2">2</button>
+                            <button type="button" class="quick-rate-btn btn-red" data-rate="3">3</button>
+                            <button type="button" class="quick-rate-btn btn-red" data-rate="4">4</button>
+                            <button type="button" class="quick-rate-btn btn-red" data-rate="5">5</button>
+                            <button type="button" class="quick-rate-btn btn-green" data-rate="6">6</button>
+                            <button type="button" class="quick-rate-btn btn-green" data-rate="7">7</button>
+                            <button type="button" class="quick-rate-btn btn-green" data-rate="8">8</button>
+                            <button type="button" class="quick-rate-btn btn-green" data-rate="9">9</button>
+                            <button type="button" class="quick-rate-btn btn-green" data-rate="10">10</button>
+                            <button type="button" class="quick-rate-btn btn-awesome" data-rate="11" title="11 (охуенный)">11 охуенный</button>
+                        </div>
+                    </div>
+
+                    <!-- Блок нескольких оценок участников киноклуба -->
+                    <div class="multi-rating-container">
+                        <div class="multi-rating-header">
+                            <span class="multi-rating-title">👥 Оценки участников (среднее)</span>
+                        </div>
+                        <label>
+                            <span>Оценки через запятую или пробел:</span>
+                            <input type="text" id="multiRatingInput" placeholder="Например: 7, 8, 9, 10 или 5 8 9">
+                        </label>
+                        <div id="multiRatingCalcInfo" class="multi-rating-calc-info hidden"></div>
+                    </div>
+
+                    <!-- Поле итоговой оценки фильма -->
+                    <div class="final-rating-block">
+                        <label>
+                            <span>Итоговая оценка (от -1 до 11 или через запятую):</span>
+                            <input type="text" id="ratingInput" placeholder="От -1 до 11 (или 7, 8, 9)">
+                        </label>
+                        <div class="rating-preview-row">
+                            <span class="rating-preview-label">Как отобразится:</span>
+                            <div id="ratingLivePreview" class="rating-preview-result"><span class="muted">-</span></div>
+                        </div>
+                    </div>
                 </div>
-
-                <!-- Поле итоговой оценки фильма -->
-                <label>
-                    <span>Итоговая оценка фильма (от -1 до 11 или несколько через запятую):</span>
-                    <input type="text" id="ratingInput" placeholder="От -1 до 11 (или например: 7, 8, 9)">
-                    <div class="rating-preview-row">
-                        <span class="rating-preview-label">Как отобразится:</span>
-                        <div id="ratingLivePreview" class="rating-preview-result"><span class="muted">-</span></div>
-                    </div>
-                </label>
-
-                <button id="saveRatingBtn" type="button">Сохранить оценку</button>
-                <a class="secondary-link" href="index.html">Вернуться к колесу</a>
             </form>
         </section>
     </main>

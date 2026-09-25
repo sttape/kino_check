@@ -172,9 +172,9 @@ function renderMovies(movies) {
             : (movie.ratings != null ? `<span class="rating-badge">${movie.ratings}</span>` : `<span class="muted">-</span>`);
 
         tr.innerHTML = `
-            <td class="col-title"><strong class="movie-title-text" style="color: var(--text); font-size: 0.94rem;">${escapeHtml(movie.title)}</strong></td>
-            <td class="col-genre">${escapeHtml(movie.genre || "-")}</td>
-            <td class="col-comment comment-cell" title="${escapeHtml(movie.comment || "")}">${escapeHtml(movie.comment || "-")}</td>
+            <td class="col-title"><strong class="cell-truncate movie-title-text" style="color: var(--text);" title="${escapeHtml(movie.title)}">${escapeHtml(movie.title)}</strong></td>
+            <td class="col-genre"><span class="cell-truncate" title="${escapeHtml(movie.genre || '')}">${escapeHtml(movie.genre || "-")}</span></td>
+            <td class="col-comment"><span class="cell-truncate" title="${escapeHtml(movie.comment || '')}">${escapeHtml(movie.comment || "-")}</span></td>
             <td class="col-status">${statusHtml}</td>
             <td class="col-rating">${ratingHtml}</td>
             <td class="col-actions">

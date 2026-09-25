@@ -1123,52 +1123,7 @@ function updateNavAuthButtons() {
     });
 }
 
-// ── Плавный переход между страницами ─────────────────────────────────────
-function initPageTransitions() {
-    document.addEventListener("click", (e) => {
-        const link = e.target.closest("a[href]");
-        if (!link) return;
-
-        const rawHref = link.getAttribute("href");
-        if (!rawHref || rawHref.startsWith("#") || rawHref.startsWith("javascript:") || rawHref.startsWith("mailto:") || rawHref.startsWith("tel:")) {
-            return;
-        }
-
-        // Игнорируем внешние ссылки и клики с зажатыми модификаторами
-        if (link.target === "_blank" || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
-            return;
-        }
-
-        try {
-            const url = new URL(link.href, window.location.origin);
-            if (url.origin !== window.location.origin) return;
-
-            // Если кликнули на ссылку текущей страницы с теми же параметрами
-            if (url.pathname === window.location.pathname && url.search === window.location.search) {
-                return;
-            }
-
-            // Если браузер не поддерживает View Transitions API, плавно гасим текущую страницу перед переходом
-            if (!("startViewTransition" in document)) {
-                e.preventDefault();
-                document.body.classList.add("page-is-leaving");
-                setTimeout(() => {
-                    window.location.href = link.href;
-                }, 140);
-            }
-        } catch (_) {}
-    });
-
-    // При возврате по истории браузера (bfcache) сбрасываем класс анимации
-    window.addEventListener("pageshow", (e) => {
-        if (e.persisted) {
-            document.body.classList.remove("page-is-leaving");
-        }
-    });
-}
-
 window.addEventListener("DOMContentLoaded", () => {
-    initPageTransitions();
     updateNavAuthButtons();
     initSupabaseAuth();
 });
