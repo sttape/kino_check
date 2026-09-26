@@ -227,7 +227,55 @@ function updateHighlight(items) {
     });
 }
 
-// ── Инициализация ────────────────────────────────────────────────────────────
+// ── Инициализация и контроль доступа ─────────────────────────────────────────
+const authRequiredPanel = document.getElementById("ratingAuthRequiredPanel");
+const mainRatingPanel   = document.getElementById("ratingMainPanel");
+const authLoginBtn      = document.getElementById("ratingAuthLoginBtn");
+
+if (authLoginBtn) {
+    authLoginBtn.addEventListener("click", async () => {
+        if (typeof ensureAuthenticated === "function") {
+            const ok = await ensureAuthenticated("Вход для оценки фильмов");
+            if (ok) {
+                await initRatingPage();
+            }
+        }
+    });
+}
+
+async function initRatingPage() {
+    const isAuth = typeof isAuthenticated === "function" ? isAuthenticated() : false;
+
+    if (!isAuth) {
+        if (authRequiredPanel) authRequiredPanel.classList.remove("hidden");
+        if (mainRatingPanel) mainRatingPanel.classList.add("hidden");
+        return;
+    }
+
+    if (authRequiredPanel) authRequiredPanel.classList.add("hidden");
+    if (mainRatingPanel) mainRatingPanel.classList.remove("hidden");
+
+    // Загрузка списка фильмов из базы данных
+    cachedMovies = await loadMovies();
+
+    // Предвыбор: сначала проверяем URL (?id=…), затем последний фильм из колеса (localStorage)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlId = urlParams.get("id");
+    const lastId = urlId || (typeof loadLastMovieId === "function" ? loadLastMovieId() : null);
+
+    if (lastId != null && (!selectedMovie || String(selectedMovie.id) !== String(lastId))) {
+        const found = cachedMovies.find(m => String(m.id) === String(lastId));
+        if (found) {
+            selectMovie(found);
+            return;
+        }
+    }
+
+    if (!selectedMovie) {
+        updateMovieCard(null);
+    }
+}
+
 window.addEventListener("DOMContentLoaded", async () => {
     // Слушатели событий ввода оценки
     if (ratingInput) {
@@ -275,9 +323,6 @@ window.addEventListener("DOMContentLoaded", async () => {
         });
     });
 
-    // Загрузка списка фильмов
-    cachedMovies = await loadMovies();
-
     // Слушатели для поля поиска фильма
     if (movieSearchInput) {
         movieSearchInput.addEventListener("input", () => {
@@ -317,8 +362,8 @@ window.addEventListener("DOMContentLoaded", async () => {
             } else if (e.key === "Enter") {
                 e.preventDefault();
                 if (currentFocusIndex >= 0 && items[currentFocusIndex]) {
-                    const id = Number(items[currentFocusIndex].dataset.id);
-                    const movie = cachedMovies.find(m => m.id === id);
+                    const id = items[currentFocusIndex].dataset.id;
+                    const movie = cachedMovies.find(m => String(m.id) === String(id));
                     if (movie) selectMovie(movie);
                 }
             } else if (e.key === "Escape") {
@@ -342,37 +387,33 @@ window.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // Предвыбор: сначала проверяем URL (?id=…), затем последний фильм из колеса (localStorage)
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlId = urlParams.get("id") ? Number(urlParams.get("id")) : null;
-    const lastId = urlId || (loadLastMovieId ? loadLastMovieId() : null);
+    // Инициализируем страницу оценки с учетом статуса авторизации
+    await initRatingPage();
 
-    if (lastId) {
-        const found = cachedMovies.find(m => m.id === lastId);
-        if (found) {
-            selectMovie(found);
-            return;
-        }
+    // Слушаем изменения авторизации для мгновенного обновления
+    if (typeof supabase !== "undefined" && supabase && supabase.auth) {
+        try {
+            supabase.auth.onAuthStateChange(async () => {
+                await initRatingPage();
+            });
+        } catch (_) {}
     }
-
-    // Если предвыбора нет — показываем пустую карточку
-    updateMovieCard(null);
 });
 
 // ── Сохранение оценки ────────────────────────────────────────────────────────
 saveRatingBtn.addEventListener("click", async () => {
-    if (typeof ensureAuthenticated === "function" && !isAuthenticated()) {
-        const authOk = await ensureAuthenticated("Для сохранения оценки фильма");
-        if (!authOk) return;
-    }
-
-    const movieId = Number(movieIdInput ? movieIdInput.value : "");
-    const movie = selectedMovie || cachedMovies.find(m => m.id === movieId);
+    const movieId = movieIdInput ? movieIdInput.value : "";
+    const movie = selectedMovie || cachedMovies.find(m => String(m.id) === String(movieId));
 
     if (!movie) {
         alert("Пожалуйста, найдите и выберите фильм из списка");
         if (movieSearchInput) movieSearchInput.focus();
         return;
+    }
+
+    if (typeof ensureAuthenticated === "function" && !isAuthenticated() && !movie.isGuest) {
+        const authOk = await ensureAuthenticated("Для сохранения оценки фильма в каталоге");
+        if (!authOk) return;
     }
 
     const rawRating = ratingInput ? ratingInput.value.trim() : "";
@@ -417,7 +458,7 @@ saveRatingBtn.addEventListener("click", async () => {
         }
 
         // Обновляем кэш и карточку сразу
-        const idx = cachedMovies.findIndex(m => m.id === movie.id);
+        const idx = cachedMovies.findIndex(m => String(m.id) === String(movie.id));
         if (idx !== -1) {
             cachedMovies[idx] = { ...movie, status: "Просмотрено", ratings: rating };
             updateMovieCard(cachedMovies[idx]);

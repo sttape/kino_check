@@ -31,10 +31,30 @@
             <a class="nav-link" href="add.html">Добавить</a>
             <a class="nav-link active" href="rating.html">Оценка</a>
         </nav>
+        <div class="nav-actions-group"></div>
     </header>
 
     <main class="page-shell">
-        <section class="panel rating-panel">
+        <!-- Блок ограничения доступа для гостей (неавторизованных пользователей) -->
+        <section id="ratingAuthRequiredPanel" class="panel auth-guard-panel hidden">
+            <div class="auth-guard-content">
+                <div class="auth-guard-icon-wrap">
+                    <span class="auth-guard-icon" aria-hidden="true">🔒</span>
+                </div>
+                <h2 class="auth-guard-title">Оценка фильмов доступна только авторизованным пользователям</h2>
+                <p class="auth-guard-text">
+                    Чтобы выставлять оценки, фиксировать результаты совместных просмотров и сохранять баллы в каталог киноклуба, пожалуйста, войдите под своей учетной записью.
+                </p>
+                <div class="auth-guard-actions">
+                    <button type="button" id="ratingAuthLoginBtn" class="primary-button">🔑 Войти в аккаунт</button>
+                    <a class="secondary-link" href="movies.html">К списку фильмов</a>
+                    <a class="secondary-link" href="index.html">На главную</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Основная панель выставления оценки (только для авторизованных) -->
+        <section id="ratingMainPanel" class="panel rating-panel">
             <div id="ratingMovieEmpty" class="empty-state hidden">
                 Сначала выберите фильм на странице колеса.
             </div>

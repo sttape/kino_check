@@ -4,6 +4,43 @@
 
 window.addEventListener("DOMContentLoaded", () => {
 
+    // ── Отображение уведомления для гостей ─────────────────────────────────
+    function renderGuestNotice() {
+        const container = document.getElementById("guestAddNoticeContainer");
+        if (!container) return;
+
+        if (!isAuthenticated()) {
+            container.innerHTML = `
+                <div class="guest-add-notice">
+                    <div class="guest-notice-icon" aria-hidden="true">💡</div>
+                    <div class="guest-notice-body">
+                        <strong>Режим гостя:</strong> Фильмы будут добавлены в ваш <em>временный список</em> в браузере и сразу станут доступны в колесе рулетки. 
+                        Чтобы сохранять фильмы в постоянный общий каталог киноклуба, <button type="button" class="inline-link-btn" id="guestNoticeLoginBtn">войдите в аккаунт</button>.
+                    </div>
+                </div>
+            `;
+            const loginBtn = container.querySelector("#guestNoticeLoginBtn");
+            if (loginBtn) {
+                loginBtn.addEventListener("click", () => {
+                    if (typeof ensureAuthenticated === "function") {
+                        ensureAuthenticated("Вход в киноклуб");
+                    }
+                });
+            }
+        } else {
+            container.innerHTML = "";
+        }
+    }
+
+    renderGuestNotice();
+    if (typeof supabase !== "undefined" && supabase && supabase.auth) {
+        try {
+            supabase.auth.onAuthStateChange(() => {
+                renderGuestNotice();
+            });
+        } catch (_) {}
+    }
+
     // ── Форма добавления ────────────────────────────────────────────────────
     const addForm      = document.getElementById("addMovieForm");
     const titleInput   = document.getElementById("movieTitle");
@@ -19,34 +56,46 @@ window.addEventListener("DOMContentLoaded", () => {
 
         if (editingId) {
             if (submitBtn) submitBtn.textContent = "Сохранить изменения";
-            supabase.from("movies").select("*").eq("id", editingId).single()
-                .then(({ data, error }) => {
-                    if (error || !data) { alert("Фильм не найден"); return; }
-                    if (titleInput)   titleInput.value   = data.title;
-                    if (genreInput)   genreInput.value   = data.genre   || "";
-                    if (commentInput) commentInput.value = data.comment || "";
-                    if (statusInput)  {
-                        let hasOption = false;
-                        for (const opt of statusInput.options) {
-                            if (opt.value === data.status) { hasOption = true; break; }
-                        }
-                        if (!hasOption && data.status) {
-                            const newOpt = document.createElement("option");
-                            newOpt.value = data.status;
-                            newOpt.textContent = data.status;
-                            statusInput.appendChild(newOpt);
-                        }
-                        statusInput.value = data.status || "Не просмотрено";
+            const loadEditingMovie = async () => {
+                let data = null;
+                if (!isAuthenticated()) {
+                    const guestList = typeof getGuestMovies === "function" ? getGuestMovies() : [];
+                    data = guestList.find(m => String(m.id) === String(editingId));
+                }
+                if (!data && supabase) {
+                    try {
+                        const res = await supabase.from("movies").select("*").eq("id", editingId).single();
+                        if (!res.error && res.data) data = res.data;
+                    } catch (_) {}
+                }
+                if (!data) { alert("Фильм не найден"); return; }
+                if (titleInput)   titleInput.value   = data.title || "";
+                if (genreInput)   genreInput.value   = data.genre || "";
+                if (commentInput) commentInput.value = data.comment || "";
+                if (statusInput)  {
+                    let hasOption = false;
+                    for (const opt of statusInput.options) {
+                        if (opt.value === data.status) { hasOption = true; break; }
                     }
-                    existingRating = data.ratings ?? null;
-                });
+                    if (!hasOption && data.status) {
+                        const newOpt = document.createElement("option");
+                        newOpt.value = data.status;
+                        newOpt.textContent = data.status;
+                        statusInput.appendChild(newOpt);
+                    }
+                    statusInput.value = data.status || "Не просмотрено";
+                }
+                existingRating = data.ratings ?? null;
+            };
+            loadEditingMovie();
         }
 
         addForm.addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            if (typeof ensureAuthenticated === "function" && !isAuthenticated()) {
-                const authOk = await ensureAuthenticated(editingId ? "Для изменения фильма" : "Для добавления фильма в каталог");
+            // Если пользователь редактирует уже существующий фильм в БД — требуем авторизацию
+            if (editingId && typeof ensureAuthenticated === "function" && !isAuthenticated()) {
+                const authOk = await ensureAuthenticated("Для изменения фильма в каталоге");
                 if (!authOk) return;
             }
 
@@ -68,15 +117,19 @@ window.addEventListener("DOMContentLoaded", () => {
                     return;
                 }
 
+                const isAuth = (typeof isAuthenticated === "function") && isAuthenticated();
+                const curList = (isAuth && typeof getCurrentListId === "function") ? getCurrentListId() : "default";
+                const redirectUrl = (isAuth && curList && curList !== "default") ? `movies.html?list=${encodeURIComponent(curList)}` : "movies.html";
+
                 if (editingId) {
                     movie.id = editingId;
                     const ok = await updateMovie(movie);
-                    if (ok) window.location.href = "movies.html";
+                    if (ok) window.location.href = redirectUrl;
                 } else {
                     const ok = await insertMovie(movie);
                     if (ok) {
                         addForm.reset();
-                        window.location.href = "movies.html";
+                        window.location.href = redirectUrl;
                     }
                 }
             } finally {
@@ -106,14 +159,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
     async function handleCsvFile(file) {
         if (!file) return;
-
-        if (typeof ensureAuthenticated === "function" && !isAuthenticated()) {
-            const authOk = await ensureAuthenticated("Для импорта фильмов из CSV");
-            if (!authOk) {
-                if (csvInput) csvInput.value = "";
-                return;
-            }
-        }
 
         if (file.size > MAX_CSV_SIZE_BYTES) {
             setStatus("Файл слишком большой. Максимальный размер: 5 МБ.", "error");
@@ -299,7 +344,10 @@ window.addEventListener("DOMContentLoaded", () => {
             setStatus(`✓ Успешно импортировано ${done} фильм(ов)`, "success");
         }
 
-        setTimeout(() => { window.location.href = "movies.html"; }, 1500);
+        const isAuth = (typeof isAuthenticated === "function") && isAuthenticated();
+        const curList = (isAuth && typeof getCurrentListId === "function") ? getCurrentListId() : "default";
+        const redirectUrl = (isAuth && curList && curList !== "default") ? `movies.html?list=${encodeURIComponent(curList)}` : "movies.html";
+        setTimeout(() => { window.location.href = redirectUrl; }, 1500);
     }
 
     // Слушатели Drag & Drop и клика на область загрузки

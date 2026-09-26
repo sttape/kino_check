@@ -25,9 +25,9 @@ function saveLastMovieId(id) {
 
 function loadLastMovieId() {
     const raw = localStorage.getItem(STORAGE_KEY_LAST_MOVIE_ID);
+    if (!raw) return null;
     const value = Number(raw);
-    if (!raw || Number.isNaN(value)) return null;
-    return value;
+    return !Number.isNaN(value) ? value : raw;
 }
 
 // Звуковые эффекты барабана

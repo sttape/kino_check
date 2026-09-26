@@ -31,6 +31,7 @@
             <a class="nav-link" href="add.html">Добавить</a>
             <a class="nav-link" href="rating.html">Оценка</a>
         </nav>
+        <div class="nav-actions-group"></div>
     </header>
 
     <main class="page-shell">
@@ -39,6 +40,7 @@
                 <h2>Фильмы</h2>
                 <span id="moviesTotalBadge" class="movies-count-badge"></span>
             </div>
+            <div id="guestListBannerContainer"></div>
             <div class="search-row">
                 <label class="search-field" for="moviesSearchInput">
                     <span>Поиск</span>
@@ -78,10 +80,11 @@
                         <span>На странице:</span>
                         <select id="perPageSelect">
                             <option value="6">6</option>
-                            <option value="8" selected>8</option>
-                            <option value="10">10</option>
+                            <option value="8">8</option>
+                            <option value="10" selected>10</option>
                             <option value="15">15</option>
                             <option value="25">25</option>
+                            <option value="50">50</option>
                         </select>
                     </label>
                 </div>

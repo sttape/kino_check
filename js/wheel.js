@@ -487,9 +487,14 @@ function applyFilterAndRender() {
 function updateHint() {
     if (!wheelHint) return;
     if (!wheelMovies.length) {
-        wheelHint.textContent = filterUnwatchedInput && filterUnwatchedInput.checked
-            ? "Все фильмы уже просмотрены! Снимите галочку фильтра или добавьте новые."
-            : "Добавьте фильмы в каталог, чтобы крутить колесо.";
+        const isAuth = (typeof isAuthenticated === "function") && isAuthenticated();
+        if (!isAuth) {
+            wheelHint.innerHTML = `В вашем временном списке пока нет фильмов. Перейдите в раздел <a href="add.html" style="color:var(--accent); text-decoration:underline; font-weight:600;">«Добавить»</a>, чтобы внести свои фильмы для рулетки!`;
+        } else {
+            wheelHint.textContent = filterUnwatchedInput && filterUnwatchedInput.checked
+                ? "Все фильмы уже просмотрены! Снимите галочку фильтра или добавьте новые."
+                : "Добавьте фильмы в каталог, чтобы крутить колесо.";
+        }
     } else {
         wheelHint.textContent = eliminationMode
             ? "Режим выбывания: выбранный фильм удаляется из колеса после каждого вращения."
@@ -1177,3 +1182,12 @@ function escapeHtml(s) {
         "'": "&#39;"
     }[c]));
 }
+
+if (typeof supabase !== "undefined" && supabase && supabase.auth) {
+    try {
+        supabase.auth.onAuthStateChange(() => {
+            syncWheelState();
+        });
+    } catch (_) {}
+}
+
