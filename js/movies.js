@@ -676,7 +676,11 @@
             });
         }
 
-        // Слушатель изменения состояния авторизации Supabase
+        // Слушатель изменения состояния авторизации Supabase и приложения
+        window.addEventListener("kino:auth-changed", () => {
+            loadAndRenderMovies();
+        });
+
         if (typeof supabase !== "undefined" && supabase && supabase.auth) {
             try {
                 supabase.auth.onAuthStateChange(() => {

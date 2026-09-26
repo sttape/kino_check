@@ -574,14 +574,21 @@ if (typeof window !== "undefined") {
 
 // Загрузка всех фильмов для активной комнаты
 async function loadMovies(customListId) {
-    // Для неавторизованных пользователей ВСЕГДА отдаем временный список гостя
-    if (!isAuthenticated()) {
-        return getGuestMovies();
+    if (typeof ensureAuthInitialized === "function") {
+        await ensureAuthInitialized();
     }
 
-    const listId = customListId ? sanitizeListId(customListId) : getCurrentListId();
+    const isAuth = isAuthenticated();
+    const guestMovies = typeof getGuestMovies === "function" ? getGuestMovies() : [];
+
+    // Если неавторизованный пользователь составил свой временный список — показываем его
+    if (!isAuth && guestMovies.length > 0) {
+        return guestMovies;
+    }
+
+    const listId = customListId ? sanitizeListId(customListId) : (isAuth ? getCurrentListId() : "default");
     if (!supabase) {
-        return getCachedMovies(listId) || [];
+        return getCachedMovies(listId) || guestMovies || [];
     }
     try {
         let query = supabase
@@ -610,16 +617,16 @@ async function loadMovies(customListId) {
                 }
             }
             console.error("Ошибка загрузки фильмов:", error.message);
-            return getCachedMovies(listId) || [];
+            return getCachedMovies(listId) || guestMovies || [];
         }
         if (data && Array.isArray(data)) {
             setCachedMovies(data, listId);
             return data;
         }
-        return getCachedMovies(listId) || [];
+        return getCachedMovies(listId) || guestMovies || [];
     } catch (err) {
         console.error("Сетевая ошибка при загрузке фильмов:", err);
-        return getCachedMovies(listId) || [];
+        return getCachedMovies(listId) || guestMovies || [];
     }
 }
 
@@ -773,6 +780,14 @@ let currentAuthSession = null;
 let currentAuthUser = null;
 let currentIsAdmin = false;
 let isAuthInitialized = false;
+let authInitPromise = null;
+
+function ensureAuthInitialized() {
+    if (!authInitPromise) {
+        authInitPromise = initSupabaseAuth();
+    }
+    return authInitPromise;
+}
 
 // Безопасная проверка прав администратора через серверную функцию Supabase
 async function refreshAdminStatus() {
@@ -790,7 +805,10 @@ async function refreshAdminStatus() {
 
 // Инициализация и проверка сессии Supabase Auth
 async function initSupabaseAuth() {
-    if (!supabase || !supabase.auth) return;
+    if (!supabase || !supabase.auth) {
+        isAuthInitialized = true;
+        return;
+    }
     try {
         const { data, error } = await supabase.auth.getSession();
         if (!error && data && data.session) {
@@ -808,18 +826,47 @@ async function initSupabaseAuth() {
         isAuthInitialized = true;
         updateNavAuthButtons();
         updateNavigationLinksWithListId();
+        try {
+            window.dispatchEvent(new CustomEvent("kino:auth-changed", {
+                detail: {
+                    session: currentAuthSession,
+                    user: currentAuthUser,
+                    isAdmin: currentIsAdmin,
+                    isAuthenticated: isAuthenticated()
+                }
+            }));
+        } catch (_) {}
     }
 
-    try {
-        supabase.auth.onAuthStateChange(async (_event, session) => {
-            currentAuthSession = session;
-            currentAuthUser = session ? session.user : null;
-            await refreshAdminStatus();
-            updateNavAuthButtons();
-        });
-    } catch (e) {
-        console.warn("Ошибка подписки на события авторизации:", e);
+    if (!window._supabaseAuthListenerAttached) {
+        window._supabaseAuthListenerAttached = true;
+        try {
+            supabase.auth.onAuthStateChange(async (_event, session) => {
+                currentAuthSession = session;
+                currentAuthUser = session ? session.user : null;
+                await refreshAdminStatus();
+                updateNavAuthButtons();
+                updateNavigationLinksWithListId();
+                try {
+                    window.dispatchEvent(new CustomEvent("kino:auth-changed", {
+                        detail: {
+                            session: currentAuthSession,
+                            user: currentAuthUser,
+                            isAdmin: currentIsAdmin,
+                            isAuthenticated: isAuthenticated()
+                        }
+                    }));
+                } catch (_) {}
+            });
+        } catch (e) {
+            console.warn("Ошибка подписки на события авторизации:", e);
+        }
     }
+}
+
+if (typeof window !== "undefined") {
+    window.ensureAuthInitialized = ensureAuthInitialized;
+    window.initSupabaseAuth = initSupabaseAuth;
 }
 
 // Проверка: авторизован ли пользователь в Supabase Auth

@@ -33,6 +33,9 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     renderGuestNotice();
+    window.addEventListener("kino:auth-changed", () => {
+        renderGuestNotice();
+    });
     if (typeof supabase !== "undefined" && supabase && supabase.auth) {
         try {
             supabase.auth.onAuthStateChange(() => {

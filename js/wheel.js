@@ -1183,6 +1183,10 @@ function escapeHtml(s) {
     }[c]));
 }
 
+window.addEventListener("kino:auth-changed", () => {
+    syncWheelState();
+});
+
 if (typeof supabase !== "undefined" && supabase && supabase.auth) {
     try {
         supabase.auth.onAuthStateChange(() => {

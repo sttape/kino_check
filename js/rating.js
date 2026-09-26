@@ -391,6 +391,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     await initRatingPage();
 
     // Слушаем изменения авторизации для мгновенного обновления
+    window.addEventListener("kino:auth-changed", async () => {
+        await initRatingPage();
+    });
+
     if (typeof supabase !== "undefined" && supabase && supabase.auth) {
         try {
             supabase.auth.onAuthStateChange(async () => {
